@@ -1,13 +1,36 @@
 import { useState, useEffect, useCallback } from 'react';
 
 const NyankoJump = () => {
-  const [position, setPosition] = useState({ x: 100, y: 300 });
+  const [dimensions, setDimensions] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight
+  });
+  const [position, setPosition] = useState({ x: 100, y: window.innerHeight - 100 });
   const [velocity, setVelocity] = useState({ x: 0, y: 0 });
   const [fishes, setFishes] = useState([]);
   const [score, setScore] = useState(0);
-  const [isJumping, setIsJumping] = useState(false);
+  const [isGrounded, setIsGrounded] = useState(true);
   const [gameStarted, setGameStarted] = useState(false);
   const [audioContext, setAudioContext] = useState(null);
+  const [lastJumpTime, setLastJumpTime] = useState(0);
+
+  // ウィンドウサイズの変更を監視
+  useEffect(() => {
+    const handleResize = () => {
+      setDimensions({
+        width: window.innerWidth,
+        height: window.innerHeight
+      });
+      // 地面より下にいる場合は位置を調整
+      setPosition(pos => ({
+        x: pos.x,
+        y: Math.min(pos.y, window.innerHeight - 100)
+      }));
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     setAudioContext(new (window.AudioContext || window.webkitAudioContext)());
@@ -48,16 +71,16 @@ const NyankoJump = () => {
 
   // ゲームの状態を初期化
   const initializeGame = () => {
-    setPosition({ x: 100, y: 300 });
+    setPosition({ x: 100, y: dimensions.height - 100 });
     setVelocity({ x: 0, y: 0 });
     setScore(0);
-    setIsJumping(false);
+    setIsGrounded(true);
     setGameStarted(true);
     
     // 初期の魚を生成
     const initialFishes = Array.from({ length: 5 }, () => ({
-      x: Math.random() * 400,
-      y: Math.random() * 200 + 50,
+      x: Math.random() * (dimensions.width - 100) + 50,
+      y: Math.random() * (dimensions.height - 200) + 50,
       id: Math.random()
     }));
     setFishes(initialFishes);
@@ -73,17 +96,21 @@ const NyankoJump = () => {
 
       if (!gameStarted) return;
 
+      const now = Date.now();
       switch (e.key) {
         case 'ArrowLeft':
-          setVelocity(v => ({ ...v, x: -5 }));
+          setVelocity(v => ({ ...v, x: -8 }));
           break;
         case 'ArrowRight':
-          setVelocity(v => ({ ...v, x: 5 }));
+          setVelocity(v => ({ ...v, x: 8 }));
           break;
         case ' ':
-          if (!isJumping) {
-            setVelocity(v => ({ ...v, y: -20 }));
-            setIsJumping(true);
+          if (isGrounded && now - lastJumpTime > 50) {
+            // 画面の高さに応じてジャンプ力を調整
+            const jumpPower = dimensions.height * -0.04; // 画面の高さの4%をジャンプ力に
+            setVelocity(v => ({ ...v, y: jumpPower }));
+            setIsGrounded(false);
+            setLastJumpTime(now);
             playSound('jump');
           }
           break;
@@ -103,7 +130,7 @@ const NyankoJump = () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [gameStarted, isJumping, playSound]);
+  }, [gameStarted, isGrounded, lastJumpTime, playSound, dimensions]);
 
   // ゲームループ
   useEffect(() => {
@@ -112,23 +139,26 @@ const NyankoJump = () => {
     const gameLoop = setInterval(() => {
       // 位置の更新
       setPosition(pos => {
-        const newX = Math.max(0, Math.min(400, pos.x + velocity.x));
+        const newX = Math.max(50, Math.min(dimensions.width - 50, pos.x + velocity.x));
         const newY = pos.y + velocity.y;
         return { x: newX, y: newY };
       });
 
-      // 重力の適用
+      // 重力の適用（画面の高さに応じて調整）
       setVelocity(v => ({
         ...v,
-        y: v.y + 0.8
+        y: v.y + (dimensions.height * 0.001) // 画面の高さの0.1%を重力に
       }));
 
       // 地面との衝突判定
-      if (position.y > 300) {
-        setPosition(pos => ({ ...pos, y: 300 }));
-        setVelocity(v => ({ ...v, y: 0 }));
-        setIsJumping(false);
-      }
+      setPosition(pos => {
+        if (pos.y > dimensions.height - 100) {
+          setVelocity(v => ({ ...v, y: 0 }));
+          setIsGrounded(true);
+          return { ...pos, y: dimensions.height - 100 };
+        }
+        return pos;
+      });
 
       // 魚との衝突判定
       setFishes(prevFishes => {
@@ -150,8 +180,8 @@ const NyankoJump = () => {
           return [
             ...remainingFishes,
             {
-              x: Math.random() * 400,
-              y: Math.random() * 200 + 50,
+              x: Math.random() * (dimensions.width - 100) + 50,
+              y: Math.random() * (dimensions.height - 200) + 50,
               id: Math.random()
             }
           ];
@@ -162,19 +192,19 @@ const NyankoJump = () => {
     }, 1000 / 60);
 
     return () => clearInterval(gameLoop);
-  }, [gameStarted, position, velocity, playSound]);
+  }, [gameStarted, position, velocity, playSound, dimensions]);
 
   return (
-    <div className="w-full max-w-lg mx-auto p-4">
-      <div className="text-center mb-4">
-        <h1 className="text-2xl font-bold mb-2">🐱 にゃんこジャンプ</h1>
-        <div className="text-xl">スコア: {score} 🐟</div>
+    <div className="w-screen h-screen overflow-hidden">
+      <div className="absolute top-0 left-0 w-full text-center z-10 p-8 pointer-events-none">
+        <h1 className="text-5xl font-bold mb-4 text-white drop-shadow-lg">🐱 にゃんこジャンプ</h1>
+        <div className="text-4xl text-white drop-shadow-lg">スコア: {score} 🐠</div>
       </div>
 
-      <div className="relative bg-blue-100 w-full h-80 rounded-lg overflow-hidden">
+      <div className="relative w-full h-full bg-gradient-to-b from-blue-300 to-blue-100">
         {/* 猫 */}
         <div
-          className="absolute text-4xl"
+          className="absolute text-8xl"
           style={{
             left: `${position.x}px`,
             top: `${position.y}px`,
@@ -188,7 +218,7 @@ const NyankoJump = () => {
         {fishes.map(fish => (
           <div
             key={fish.id}
-            className="absolute text-2xl"
+            className="absolute text-6xl"
             style={{
               left: `${fish.x}px`,
               top: `${fish.y}px`,
@@ -200,14 +230,14 @@ const NyankoJump = () => {
         ))}
 
         {/* 地面 */}
-        <div className="absolute bottom-0 w-full h-4 bg-green-500"></div>
+        <div className="absolute bottom-0 w-full h-24 bg-gradient-to-t from-green-600 to-green-400"></div>
 
         {/* スタート画面のオーバーレイ */}
         {!gameStarted && (
           <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
             <div className="text-white text-center">
-              <p className="mb-4 text-xl">スペースキーを押してスタート！</p>
-              <p>⬅️➡️: 移動 スペース: ジャンプ</p>
+              <p className="mb-6 text-4xl">スペースキーを押してスタート！</p>
+              <p className="text-2xl">⬅️➡️: 移動 スペース: ジャンプ</p>
             </div>
           </div>
         )}
