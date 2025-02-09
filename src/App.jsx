@@ -1,9 +1,10 @@
 import "./App.css";
+import NyankoJump from "./components/NyankoJump";
 
 function App() {
   return (
     <>
-      <h1 className="text-5xl font-bold underline">Hello world!</h1>
+      <NyankoJump />
     </>
   );
 }
