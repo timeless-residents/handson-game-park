@@ -1,10 +1,10 @@
 import "./App.css";
-import NyankoJump from "./components/NyankoJump";
+import GameMenu from './components/GameMenu';
 
 function App() {
   return (
     <>
-      <NyankoJump />
+      <GameMenu />
     </>
   );
 }
