@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import NyankoJump from './NyankoJump';
 import LizardGame from './LizardGame';
 import DIYHouseGame from './DIYHouseGame';
+import CandyRocketGame from './CandyRocketGame';
 
 const GameMenu = () => {
   const [selectedGame, setSelectedGame] = useState(null);
@@ -29,6 +30,13 @@ const GameMenu = () => {
       emoji: '🔨',
       description: '矢印キーで板を移動し、スペースキーで釘を打っておうちを完成させる',
       component: DIYHouseGame
+    },
+    {
+      id: 'candy-rocket',
+      title: 'キャンディロケット体操',
+      emoji: '🚀',
+      description: '矢印キーでキャンディを点火位置に置き、スペースキーで発射して空中の星を取る',
+      component: CandyRocketGame
     }
   ];
 
@@ -101,7 +109,6 @@ const GameMenu = () => {
               key={game.id}
               onClick={() => setSelectedGame(game.id)}
               className={`bg-white/90 hover:bg-white rounded-xl p-6 text-center transition-all transform hover:scale-105 shadow-lg ${focusedGameIndex === index ? 'ring-4 ring-purple-500' : ''}`}
-              // 各ボタンをフォーカス可能にする（buttonなので通常は不要ですが、明示的にする場合は tabIndex="0" を追加できます）
               ref={el => (gameButtonsRef.current[index] = el)}
               onFocus={() => setFocusedGameIndex(index)}
             >
