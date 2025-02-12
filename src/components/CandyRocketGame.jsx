@@ -15,19 +15,19 @@ const CandyRocketGame = () => {
   const [position, setPosition] = useState(50);
   // ロケットの動作状態："idle"（待機）、"up"（上昇）、"down"（下降）
   const [direction, setDirection] = useState('idle');
-  // ロケットの高さ（0 = 下, 100 = 上）※ CSS の bottom プロパティで管理
+  // ロケットの高さ（0=下、100=上） ※ CSS の bottom プロパティで管理
   const [height, setHeight] = useState(0);
   const [stars, setStars] = useState(initialStars);
   const [score, setScore] = useState(0);
   // 全星回収時にゲームクリア状態とするフラグ
   const [gameClear, setGameClear] = useState(false);
 
-  // サウンド用 Audio オブジェクト（各イベントで再生）
+  // サウンド用 Audio オブジェクト
   const launchSoundRef = useRef(null);
   const starHitSoundRef = useRef(null);
   const clearSoundRef = useRef(null);
 
-  // コンポーネントマウント時にサウンドファイルを読み込み
+  // コンポーネントマウント時にサウンドファイルを読み込み（public/sounds 配下に配置）
   useEffect(() => {
     launchSoundRef.current = new Audio('/sounds/rocket-launch.wav');
     starHitSoundRef.current = new Audio('/sounds/star-hit.wav');
@@ -71,7 +71,7 @@ const CandyRocketGame = () => {
         if (direction === 'up') {
           const newHeight = prevHeight + 1.5;
           if (newHeight >= 100) {
-            // 上端到達で即下降開始
+            // 上端到達で下降開始
             setDirection('down');
             return 100;
           }
@@ -90,10 +90,10 @@ const CandyRocketGame = () => {
     return () => clearInterval(interval);
   }, [direction]);
 
-  // 衝突判定：上昇中のみ、星との距離が一定以下なら「回収」
+  // 衝突判定：上昇中のみ、星との距離が一定以下なら回収
   useEffect(() => {
     if (direction !== 'up') return;
-    const rocketY = 100 - height; // 星は top で配置（上端:0, 下端:100）
+    const rocketY = 100 - height; // 星の配置は top で（上端:0, 下端:100）
     let collisionCount = 0;
     const updatedStars = stars.map(star => {
       if (!star.collected) {
@@ -114,7 +114,7 @@ const CandyRocketGame = () => {
         starHitSoundRef.current.currentTime = 0;
         starHitSoundRef.current.play();
       }
-      // 星に衝突したら即座に下降開始
+      // 衝突したら即座に下降開始
       setDirection('down');
     }
   }, [height, position, direction, stars]);
@@ -153,7 +153,7 @@ const CandyRocketGame = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-purple-500 to-blue-600 p-4">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-purple-500 to-blue-600 p-4 overflow-hidden">
       <div className="w-full max-w-4xl">
         {/* ヘッダー */}
         <div className="bg-white/90 rounded-lg p-4 mb-4 shadow-lg flex justify-between items-center">
@@ -161,7 +161,7 @@ const CandyRocketGame = () => {
           <div className="text-2xl font-bold text-purple-600">スコア: {score}</div>
         </div>
         {/* ゲーム画面 */}
-        <div className="relative w-full h-[32rem] bg-gradient-to-b from-blue-200 to-blue-400 rounded-xl overflow-hidden border-4 border-white/50 shadow-2xl">
+        <div className="relative w-full md:h-[32rem] h-80 bg-gradient-to-b from-blue-200 to-blue-400 rounded-xl overflow-hidden border-4 border-white/50 shadow-2xl">
           {/* ゲームクリアオーバーレイ */}
           {gameClear && (
             <div className="absolute inset-0 z-20 flex items-center justify-center bg-black bg-opacity-50">
@@ -208,8 +208,8 @@ const CandyRocketGame = () => {
           </div>
         </div>
         {/* フッター：キーボード操作説明＆リセットボタン */}
-        <div className="mt-4 bg-white/90 rounded-lg p-4 shadow-lg flex justify-between items-center">
-          <div className="text-sm text-gray-600 flex gap-4">
+        <div className="mt-4 bg-white/90 rounded-lg p-4 shadow-lg flex flex-col md:flex-row justify-between items-center">
+          <div className="text-sm text-gray-600 flex gap-4 mb-2 md:mb-0">
             <span className="flex items-center gap-2">
               <kbd className="px-2 py-1 bg-gray-100 border rounded shadow">←</kbd>
               <kbd className="px-2 py-1 bg-gray-100 border rounded shadow">→</kbd>
