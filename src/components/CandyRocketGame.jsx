@@ -40,9 +40,9 @@ const CandyRocketGame = () => {
 
   // コンポーネントマウント時にサウンドファイルを読み込み（public/sounds 配下に配置）
   useEffect(() => {
-    launchSoundRef.current = new Audio('/sounds/rocket-launch.wav');
-    starHitSoundRef.current = new Audio('/sounds/star-hit.wav');
-    clearSoundRef.current = new Audio('/sounds/game-clear.wav');
+    launchSoundRef.current = new Audio('/handson-game-park/sounds/rocket-launch.wav');
+    starHitSoundRef.current = new Audio('/handson-game-park/sounds/star-hit.wav');
+    clearSoundRef.current = new Audio('/handson-game-park/sounds/game-clear.wav');
   }, []);
 
   // キーボード操作：待機状態のときのみ有効
