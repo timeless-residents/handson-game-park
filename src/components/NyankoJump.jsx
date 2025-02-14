@@ -13,6 +13,8 @@ const NyankoJump = () => {
   const [gameStarted, setGameStarted] = useState(false);
   const [audioContext, setAudioContext] = useState(null);
   const [lastJumpTime, setLastJumpTime] = useState(0);
+  const [isMovingLeft, setIsMovingLeft] = useState(false);
+  const [isMovingRight, setIsMovingRight] = useState(false);
 
   // ウィンドウサイズの変更を監視
   useEffect(() => {
@@ -21,7 +23,6 @@ const NyankoJump = () => {
         width: window.innerWidth,
         height: window.innerHeight
       });
-      // 地面より下にいる場合は位置を調整
       setPosition(pos => ({
         x: pos.x,
         y: Math.min(pos.y, window.innerHeight - 100)
@@ -36,7 +37,6 @@ const NyankoJump = () => {
     setAudioContext(new (window.AudioContext || window.webkitAudioContext)());
   }, []);
 
-  // 効果音を生成する関数
   const playSound = useCallback((type) => {
     if (!audioContext) return;
 
@@ -47,7 +47,6 @@ const NyankoJump = () => {
     gainNode.connect(audioContext.destination);
 
     if (type === 'jump') {
-      // ジャンプ音
       oscillator.type = 'sine';
       oscillator.frequency.setValueAtTime(500, audioContext.currentTime);
       oscillator.frequency.exponentialRampToValueAtTime(300, audioContext.currentTime + 0.2);
@@ -57,7 +56,6 @@ const NyankoJump = () => {
       oscillator.start();
       oscillator.stop(audioContext.currentTime + 0.2);
     } else if (type === 'collect') {
-      // 魚ゲット音
       oscillator.type = 'sine';
       oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
       oscillator.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.1);
@@ -69,7 +67,6 @@ const NyankoJump = () => {
     }
   }, [audioContext]);
 
-  // ゲームの状態を初期化
   const initializeGame = () => {
     setPosition({ x: 100, y: dimensions.height - 100 });
     setVelocity({ x: 0, y: 0 });
@@ -77,7 +74,6 @@ const NyankoJump = () => {
     setIsGrounded(true);
     setGameStarted(true);
     
-    // 初期の魚を生成
     const initialFishes = Array.from({ length: 5 }, () => ({
       x: Math.random() * (dimensions.width - 100) + 50,
       y: Math.random() * (dimensions.height - 200) + 50,
@@ -86,7 +82,26 @@ const NyankoJump = () => {
     setFishes(initialFishes);
   };
 
-  // キーボード入力の処理
+  const handleJump = () => {
+    const now = Date.now();
+    if (isGrounded && now - lastJumpTime > 50) {
+      const jumpPower = dimensions.height * -0.04;
+      setVelocity(v => ({ ...v, y: jumpPower }));
+      setIsGrounded(false);
+      setLastJumpTime(now);
+      playSound('jump');
+    }
+  };
+
+  // タッチ操作の処理
+  useEffect(() => {
+    if (!gameStarted) return;
+
+    const movement = isMovingLeft ? -8 : isMovingRight ? 8 : 0;
+    setVelocity(v => ({ ...v, x: movement }));
+  }, [isMovingLeft, isMovingRight, gameStarted]);
+
+  // キーボード操作のサポート（PCユーザー向け）
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!gameStarted && e.key === ' ') {
@@ -96,30 +111,24 @@ const NyankoJump = () => {
 
       if (!gameStarted) return;
 
-      const now = Date.now();
       switch (e.key) {
         case 'ArrowLeft':
-          setVelocity(v => ({ ...v, x: -8 }));
+          setIsMovingLeft(true);
           break;
         case 'ArrowRight':
-          setVelocity(v => ({ ...v, x: 8 }));
+          setIsMovingRight(true);
           break;
         case ' ':
-          if (isGrounded && now - lastJumpTime > 50) {
-            // 画面の高さに応じてジャンプ力を調整
-            const jumpPower = dimensions.height * -0.04; // 画面の高さの4%をジャンプ力に
-            setVelocity(v => ({ ...v, y: jumpPower }));
-            setIsGrounded(false);
-            setLastJumpTime(now);
-            playSound('jump');
-          }
+          handleJump();
           break;
       }
     };
 
     const handleKeyUp = (e) => {
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-        setVelocity(v => ({ ...v, x: 0 }));
+      if (e.key === 'ArrowLeft') {
+        setIsMovingLeft(false);
+      } else if (e.key === 'ArrowRight') {
+        setIsMovingRight(false);
       }
     };
 
@@ -130,27 +139,24 @@ const NyankoJump = () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [gameStarted, isGrounded, lastJumpTime, playSound, dimensions]);
+  }, [gameStarted, handleJump]);
 
   // ゲームループ
   useEffect(() => {
     if (!gameStarted) return;
 
     const gameLoop = setInterval(() => {
-      // 位置の更新
       setPosition(pos => {
         const newX = Math.max(50, Math.min(dimensions.width - 50, pos.x + velocity.x));
         const newY = pos.y + velocity.y;
         return { x: newX, y: newY };
       });
 
-      // 重力の適用（画面の高さに応じて調整）
       setVelocity(v => ({
         ...v,
-        y: v.y + (dimensions.height * 0.001) // 画面の高さの0.1%を重力に
+        y: v.y + (dimensions.height * 0.001)
       }));
 
-      // 地面との衝突判定
       setPosition(pos => {
         if (pos.y > dimensions.height - 100) {
           setVelocity(v => ({ ...v, y: 0 }));
@@ -160,7 +166,6 @@ const NyankoJump = () => {
         return pos;
       });
 
-      // 魚との衝突判定
       setFishes(prevFishes => {
         const remainingFishes = prevFishes.filter(fish => {
           const dx = fish.x - position.x;
@@ -175,7 +180,6 @@ const NyankoJump = () => {
           return true;
         });
 
-        // 新しい魚の生成
         if (remainingFishes.length < 5) {
           return [
             ...remainingFishes,
@@ -192,7 +196,7 @@ const NyankoJump = () => {
     }, 1000 / 60);
 
     return () => clearInterval(gameLoop);
-  }, [gameStarted, position, velocity, playSound, dimensions]);
+  }, [gameStarted, position, velocity, dimensions.height, dimensions.width, playSound]);
 
   return (
     <div className="w-screen h-screen overflow-hidden">
@@ -232,13 +236,50 @@ const NyankoJump = () => {
         {/* 地面 */}
         <div className="absolute bottom-0 w-full h-24 bg-gradient-to-t from-green-600 to-green-400"></div>
 
-        {/* スタート画面のオーバーレイ */}
+        {/* コントロールボタン */}
+        {gameStarted && (
+          <div className="absolute bottom-28 left-0 w-full flex justify-between px-8 z-20">
+            <div className="flex gap-4">
+              <button
+                className="w-16 h-16 bg-white/50 rounded-full flex items-center justify-center text-4xl backdrop-blur-sm active:bg-white/30"
+                onTouchStart={() => setIsMovingLeft(true)}
+                onTouchEnd={() => setIsMovingLeft(false)}
+                onMouseDown={() => setIsMovingLeft(true)}
+                onMouseUp={() => setIsMovingLeft(false)}
+                onMouseLeave={() => setIsMovingLeft(false)}
+              >
+                ⬅️
+              </button>
+              <button
+                className="w-16 h-16 bg-white/50 rounded-full flex items-center justify-center text-4xl backdrop-blur-sm active:bg-white/30"
+                onTouchStart={() => setIsMovingRight(true)}
+                onTouchEnd={() => setIsMovingRight(false)}
+                onMouseDown={() => setIsMovingRight(true)}
+                onMouseUp={() => setIsMovingRight(false)}
+                onMouseLeave={() => setIsMovingRight(false)}
+              >
+                ➡️
+              </button>
+            </div>
+            <button
+              className="w-24 h-24 bg-white/50 rounded-full flex items-center justify-center text-4xl backdrop-blur-sm active:bg-white/30"
+              onTouchStart={handleJump}
+              onMouseDown={handleJump}
+            >
+              ⬆️
+            </button>
+          </div>
+        )}
+
+        {/* スタート画面 */}
         {!gameStarted && (
           <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-            <div className="text-white text-center">
-              <p className="mb-6 text-4xl">スペースキーを押してスタート！</p>
-              <p className="text-2xl">⬅️➡️: 移動 スペース: ジャンプ</p>
-            </div>
+            <button
+              className="bg-white/20 backdrop-blur-sm px-8 py-4 rounded-xl text-white text-2xl active:bg-white/10"
+              onClick={initializeGame}
+            >
+              タップしてスタート！
+            </button>
           </div>
         )}
       </div>

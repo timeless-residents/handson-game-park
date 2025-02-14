@@ -14,8 +14,9 @@ const LizardGame = () => {
   const [windPower, setWindPower] = useState(0);
   const [audioContext, setAudioContext] = useState(null);
   const [lastWindTime, setLastWindTime] = useState(0);
+  const [isMovingLeft, setIsMovingLeft] = useState(false);
+  const [isMovingRight, setIsMovingRight] = useState(false);
 
-  // ウィンドウサイズの変更を監視
   useEffect(() => {
     const handleResize = () => {
       setDimensions({
@@ -36,7 +37,6 @@ const LizardGame = () => {
     setAudioContext(new (window.AudioContext || window.webkitAudioContext)());
   }, []);
 
-  // 効果音を生成する関数
   const playSound = useCallback((type) => {
     if (!audioContext) return;
 
@@ -64,7 +64,6 @@ const LizardGame = () => {
     oscillator.stop(audioContext.currentTime + 0.3);
   }, [audioContext]);
 
-  // ゲームの初期化
   const initializeGame = () => {
     setPosition({ x: 100, y: dimensions.height - 100 });
     setVelocity({ x: 0, y: 0 });
@@ -73,7 +72,6 @@ const LizardGame = () => {
     setGameStarted(true);
     setWindPower(0);
     
-    // 初期の昆虫を生成
     const initialInsects = Array.from({ length: 3 }, () => ({
       x: Math.random() * (dimensions.width - 200) + 100,
       y: Math.random() * (dimensions.height - 200) + 100,
@@ -82,7 +80,28 @@ const LizardGame = () => {
     setInsects(initialInsects);
   };
 
-  // キーボード入力の処理
+  // 扇風機ボタンの処理
+  const handleWindStart = () => {
+    const now = Date.now();
+    if (now - lastWindTime > 300) {
+      setWindPower(8);
+      setLastWindTime(now);
+      playSound('wind');
+    }
+  };
+
+  const handleWindEnd = () => {
+    setWindPower(0);
+  };
+
+  // 移動制御
+  useEffect(() => {
+    if (!gameStarted) return;
+    const movement = isMovingLeft ? -6 : isMovingRight ? 6 : 0;
+    setVelocity(v => ({ ...v, x: movement }));
+  }, [isMovingLeft, isMovingRight, gameStarted]);
+
+  // キーボード操作のサポート
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!gameStarted && e.key === ' ') {
@@ -92,30 +111,30 @@ const LizardGame = () => {
 
       if (!gameStarted) return;
 
-      const now = Date.now();
       switch (e.key) {
         case 'ArrowLeft':
-          setVelocity(v => ({ ...v, x: -6 }));
+          setIsMovingLeft(true);
           break;
         case 'ArrowRight':
-          setVelocity(v => ({ ...v, x: 6 }));
+          setIsMovingRight(true);
           break;
         case ' ':
-          if (now - lastWindTime > 300) {
-            setWindPower(8);
-            setLastWindTime(now);
-            playSound('wind');
-          }
+          handleWindStart();
           break;
       }
     };
 
     const handleKeyUp = (e) => {
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-        setVelocity(v => ({ ...v, x: 0 }));
-      }
-      if (e.key === ' ') {
-        setWindPower(0);
+      switch (e.key) {
+        case 'ArrowLeft':
+          setIsMovingLeft(false);
+          break;
+        case 'ArrowRight':
+          setIsMovingRight(false);
+          break;
+        case ' ':
+          handleWindEnd();
+          break;
       }
     };
 
@@ -126,40 +145,33 @@ const LizardGame = () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [gameStarted, lastWindTime, playSound]);
+  }, [gameStarted]);
 
   // ゲームループ
   useEffect(() => {
     if (!gameStarted) return;
 
     const gameLoop = setInterval(() => {
-      // 位置の更新
       setPosition(pos => {
         const newX = Math.max(50, Math.min(dimensions.width - 50, pos.x + velocity.x));
-        // 上下の移動制限を追加
         let newY = Math.max(50, Math.min(dimensions.height - 100, pos.y + velocity.y));
 
-        // 壁との当たり判定
         const isNearWall = newX <= 60 || newX >= dimensions.width - 60;
         
         if (isNearWall) {
           setIsOnWall(true);
-          // 壁にくっついているときは落下速度を遅くする
           setVelocity(v => ({ ...v, y: Math.min(v.y, 2) }));
         } else {
           setIsOnWall(false);
         }
 
-        // 風の効果
         if (windPower > 0) {
-          // 上限に近づくと風の効果を弱める
           const distanceFromTop = Math.max(0, newY - 50);
           const adjustedWindPower = Math.min(windPower, distanceFromTop / 10);
           newY -= adjustedWindPower;
           setVelocity(v => ({ ...v, y: Math.max(v.y - 1, -8) }));
         }
 
-        // 地面との当たり判定
         if (newY > dimensions.height - 100) {
           newY = dimensions.height - 100;
           setVelocity(v => ({ ...v, y: 0 }));
@@ -168,7 +180,6 @@ const LizardGame = () => {
         return { x: newX, y: newY };
       });
 
-      // 重力の適用
       if (!isOnWall) {
         setVelocity(v => ({
           ...v,
@@ -176,7 +187,6 @@ const LizardGame = () => {
         }));
       }
 
-      // 昆虫との当たり判定
       setInsects(prevInsects => {
         const remainingInsects = prevInsects.filter(insect => {
           const dx = insect.x - position.x;
@@ -191,7 +201,6 @@ const LizardGame = () => {
           return true;
         });
 
-        // 新しい昆虫の生成
         if (remainingInsects.length < 3) {
           return [
             ...remainingInsects,
@@ -256,14 +265,59 @@ const LizardGame = () => {
         {/* 地面 */}
         <div className="absolute bottom-0 w-full h-24 bg-gradient-to-t from-stone-600 to-stone-500"></div>
 
+        {/* コントロールボタン */}
+        {gameStarted && (
+          <div className="absolute bottom-28 left-0 w-full flex justify-between px-8 z-20">
+            <div className="flex gap-4">
+              <button
+                className="w-16 h-16 bg-white/50 rounded-full flex items-center justify-center text-4xl backdrop-blur-sm active:bg-white/30"
+                onTouchStart={() => setIsMovingLeft(true)}
+                onTouchEnd={() => setIsMovingLeft(false)}
+                onMouseDown={() => setIsMovingLeft(true)}
+                onMouseUp={() => setIsMovingLeft(false)}
+                onMouseLeave={() => setIsMovingLeft(false)}
+              >
+                ⬅️
+              </button>
+              <button
+                className="w-16 h-16 bg-white/50 rounded-full flex items-center justify-center text-4xl backdrop-blur-sm active:bg-white/30"
+                onTouchStart={() => setIsMovingRight(true)}
+                onTouchEnd={() => setIsMovingRight(false)}
+                onMouseDown={() => setIsMovingRight(true)}
+                onMouseUp={() => setIsMovingRight(false)}
+                onMouseLeave={() => setIsMovingRight(false)}
+              >
+                ➡️
+              </button>
+            </div>
+            <button
+              className="w-24 h-24 bg-white/50 rounded-full flex items-center justify-center text-4xl backdrop-blur-sm active:bg-white/30"
+              onTouchStart={handleWindStart}
+              onTouchEnd={handleWindEnd}
+              onMouseDown={handleWindStart}
+              onMouseUp={handleWindEnd}
+              onMouseLeave={handleWindEnd}
+            >
+              💨
+            </button>
+          </div>
+        )}
+
         {/* スタート画面 */}
         {!gameStarted && (
           <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
             <div className="text-white text-center">
-              <p className="mb-6 text-4xl">スペースキーを押してスタート！</p>
-              <p className="text-2xl">⬅️➡️: 移動</p>
-              <p className="text-2xl">スペース長押し: せんぷう機</p>
-              <p className="text-2xl mt-4">壁に近づくとくっつけます！</p>
+              <button
+                className="bg-white/20 backdrop-blur-sm px-8 py-4 rounded-xl text-4xl mb-8 active:bg-white/10"
+                onClick={initializeGame}
+              >
+                タップしてスタート！
+              </button>
+              <div className="space-y-2">
+                <p className="text-2xl">⬅️➡️ボタン: 移動</p>
+                <p className="text-2xl">💨ボタン長押し: せんぷう機</p>
+                <p className="text-2xl mt-4">壁に近づくとくっつけます！</p>
+              </div>
             </div>
           </div>
         )}

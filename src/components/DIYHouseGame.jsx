@@ -1,317 +1,226 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useCallback } from 'react';
 
-// グリッドの分割数
-const GRID_COLS = 12;
-const GRID_ROWS = 8;
+const DIYGame = () => {
+  // ゲームの状態
+  const [currentPos, setCurrentPos] = useState({ x: 5, y: 4 });
+  const [placedBoards, setPlacedBoards] = useState([]);
+  const [currentTarget, setCurrentTarget] = useState(0);
+  const [message, setMessage] = useState('板を赤い枠の位置まで運んでください！');
+  const [gameCompleted, setGameCompleted] = useState(false);
 
-// ヘッダーとフッターの高さ（ピクセル）
-const HEADER_HEIGHT = 100;
-const FOOTER_HEIGHT = 50;
-
-// 釘を打つ際の許容誤差はグリッド上の「セルが完全一致しているかどうか」で判定します
-
-const DIYHouseGame = () => {
-  // ゲームエリアのサイズ（ヘッダー・フッターを除く）
-  const [gameDimensions, setGameDimensions] = useState({
-    width: window.innerWidth,
-    height: window.innerHeight - HEADER_HEIGHT - FOOTER_HEIGHT,
-  });
-
-  useEffect(() => {
-    const updateDimensions = () => {
-      setGameDimensions({
-        width: window.innerWidth,
-        height: window.innerHeight - HEADER_HEIGHT - FOOTER_HEIGHT,
-      });
-    };
-    window.addEventListener("resize", updateDimensions);
-    return () => window.removeEventListener("resize", updateDimensions);
-  }, []);
-
-  // body の余白・スクロールを無くす
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-    document.body.style.margin = "0";
-    document.body.style.padding = "0";
-    return () => {
-      document.body.style.overflow = "auto";
-    };
-  }, []);
-
-  const { width: gameWidth, height: gameHeight } = gameDimensions;
-
-  // グリッドセル1つ分のサイズ
-  const cellWidth = gameWidth / GRID_COLS;
-  const cellHeight = gameHeight / GRID_ROWS;
-
-  // 木の板のサイズ（セルサイズの80%程度）
-  const BOARD_WIDTH = cellWidth * 0.8;
-  const BOARD_HEIGHT = cellHeight * 0.8;
-
-  // 各要素をセル内中央に配置するためのオフセット（セルの中央から木板サイズの半分を引く）
-  const boardOffsetX = (cellWidth - BOARD_WIDTH) / 2;
-  const boardOffsetY = (cellHeight - BOARD_HEIGHT) / 2;
-
-  // ターゲット（赤枠）のグリッド位置を定義
-  // 例として、下部中央を床、左右の壁、屋根の順に配置
-  const centerCol = GRID_COLS / 2;
-  const boardSlotsGrid = [
-    { col: Math.floor(centerCol), row: GRID_ROWS - 2 }, // 床：下から2行目中央
-    { col: Math.floor(centerCol) - 2, row: GRID_ROWS - 4 }, // 左の壁：中央より左、下から4行目
-    { col: Math.floor(centerCol) + 2, row: GRID_ROWS - 4 }, // 右の壁：中央より右、下から4行目
-    { col: Math.floor(centerCol), row: GRID_ROWS - 6 }, // 屋根：中央、下から6行目
+  // 目標位置の定義（家の形になるように配置）
+  const targets = [
+    { x: 5, y: 6 }, // 床
+    { x: 4, y: 4 }, // 左壁
+    { x: 6, y: 4 }, // 右壁
+    { x: 5, y: 2 }, // 屋根
   ];
 
-  // グリッド座標（col, row）をピクセル座標に変換する関数
-  const gridToPixel = (gridCoord) => {
-    return {
-      x: gridCoord.col * cellWidth + boardOffsetX,
-      y: gridCoord.row * cellHeight + boardOffsetY,
-    };
-  };
+  // 効果音の再生
+  const playSound = useCallback((type) => {
+    const context = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = context.createOscillator();
+    const gainNode = context.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(context.destination);
 
-  // ターゲットのピクセル座標リスト
-  const boardSlots = boardSlotsGrid.map(gridToPixel);
+    if (type === 'place') {
+      oscillator.type = 'square';
+      oscillator.frequency.setValueAtTime(440, context.currentTime);
+      oscillator.frequency.exponentialRampToValueAtTime(880, context.currentTime + 0.1);
+      gainNode.gain.setValueAtTime(0.1, context.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.1);
+    } else if (type === 'complete') {
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(523.25, context.currentTime);
+      oscillator.frequency.exponentialRampToValueAtTime(987.77, context.currentTime + 0.3);
+      gainNode.gain.setValueAtTime(0.2, context.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.3);
+    }
 
-  // 現在操作中の木の板のグリッド位置を状態として管理
-  const initialGridPos = {
-    col: Math.floor(GRID_COLS / 2),
-    row: Math.floor(GRID_ROWS / 2),
-  };
-  const [currentGridPos, setCurrentGridPos] = useState(initialGridPos);
+    oscillator.start();
+    oscillator.stop(context.currentTime + 0.3);
+  }, []);
 
-  // ピクセル座標はグリッド位置から計算
-  const [currentPosition, setCurrentPosition] = useState(
-    gridToPixel(initialGridPos)
-  );
+  // 板を配置する処理
+  const placeBoard = useCallback(() => {
+    if (currentTarget >= targets.length) return;
+    
+    const target = targets[currentTarget];
+    if (currentPos.x === target.x && currentPos.y === target.y) {
+      playSound('place');
+      setPlacedBoards([...placedBoards, { ...currentPos }]);
+      
+      if (currentTarget + 1 >= targets.length) {
+        setGameCompleted(true);
+        setMessage('家が完成しました！🎉');
+        playSound('complete');
+      } else {
+        setCurrentTarget(prev => prev + 1);
+        setCurrentPos({ x: 5, y: 4 }); // 初期位置に戻す
+        setMessage('次の板を運びましょう！');
+      }
+    } else {
+      setMessage('位置がずれています！赤い枠の位置に合わせてください。');
+    }
+  }, [currentPos, currentTarget, placedBoards, playSound]);
 
-  // ゲームエリアサイズが変わったとき、再計算
-  useEffect(() => {
-    setCurrentPosition(gridToPixel(currentGridPos));
-  }, [gameDimensions, currentGridPos]);
+  // 移動処理
+  const moveBoard = useCallback((direction) => {
+    if (gameCompleted) return;
+    
+    setCurrentPos(prev => {
+      const newPos = { ...prev };
+      switch (direction) {
+        case 'up':
+          newPos.y = Math.max(0, prev.y - 1);
+          break;
+        case 'down':
+          newPos.y = Math.min(7, prev.y + 1);
+          break;
+        case 'left':
+          newPos.x = Math.max(0, prev.x - 1);
+          break;
+        case 'right':
+          newPos.x = Math.min(9, prev.x + 1);
+          break;
+      }
+      return newPos;
+    });
+  }, [gameCompleted]);
 
-  // 釘打ち済みの板のピクセル座標リスト
-  const [placedBoards, setPlacedBoards] = useState([]);
-  // 次に釘を打つターゲットのインデックス
-  const [currentSlotIndex, setCurrentSlotIndex] = useState(0);
-  const [message, setMessage] = useState("");
-
-  // 効果音用の ref（※音声ファイルは適宜配置してください）
-  const placementAudioRef = useRef(null);
-  const completeAudioRef = useRef(null);
-
-  // キー操作の処理：グリッド上の移動
+  // キーボード操作
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // すべてのターゲットに釘を打ち終わっている場合は操作しない
-      if (currentSlotIndex >= boardSlots.length) return;
-
-      let { col, row } = currentGridPos;
-
-      if (e.key === "ArrowLeft") {
-        col = Math.max(0, col - 1);
-      } else if (e.key === "ArrowRight") {
-        col = Math.min(GRID_COLS - 1, col + 1);
-      } else if (e.key === "ArrowUp") {
-        row = Math.max(0, row - 1);
-      } else if (e.key === "ArrowDown") {
-        row = Math.min(GRID_ROWS - 1, row + 1);
-      } else if (e.key === " " || e.key === "Spacebar" || e.key === "Space") {
-        // 釘を打つ処理：現在のグリッド位置がターゲットのグリッド位置と完全一致しているか判定
-        const targetGrid = boardSlotsGrid[currentSlotIndex];
-        if (col === targetGrid.col && row === targetGrid.row) {
-          if (placementAudioRef.current) {
-            placementAudioRef.current.currentTime = 0;
-            placementAudioRef.current.play();
-          }
-          setPlacedBoards([...placedBoards, boardSlots[currentSlotIndex]]);
-          const nextIndex = currentSlotIndex + 1;
-          setCurrentSlotIndex(nextIndex);
-          if (nextIndex >= boardSlots.length) {
-            setMessage("家が完成しました！");
-            if (completeAudioRef.current) {
-              completeAudioRef.current.currentTime = 0;
-              completeAudioRef.current.play();
-            }
-          } else {
-            setMessage("板を正しい位置に打ち込みました！");
-            // 次は初期位置に戻す（グリッド上の初期位置）
-            setCurrentGridPos(initialGridPos);
-          }
-        } else {
-          setMessage("位置がずれています！もう一度調整してね。");
-        }
-        return;
+      switch (e.key) {
+        case 'ArrowUp':
+          moveBoard('up');
+          break;
+        case 'ArrowDown':
+          moveBoard('down');
+          break;
+        case 'ArrowLeft':
+          moveBoard('left');
+          break;
+        case 'ArrowRight':
+          moveBoard('right');
+          break;
+        case ' ':
+          placeBoard();
+          break;
       }
-      setCurrentGridPos({ col, row });
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [
-    currentGridPos,
-    currentSlotIndex,
-    boardSlots,
-    boardSlotsGrid,
-    placedBoards,
-  ]);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [moveBoard, placeBoard]);
 
-  // 現在のグリッド位置が変わったら、ピクセル座標を更新
-  useEffect(() => {
-    setCurrentPosition(gridToPixel(currentGridPos));
-  }, [currentGridPos, gameDimensions]);
+  // グリッドセルのレンダリング
+  const renderCell = (x, y) => {
+    // 現在の板の位置
+    const isCurrentBoard = currentPos.x === x && currentPos.y === y;
+    // 設置済みの板
+    const isPlacedBoard = placedBoards.some(board => board.x === x && board.y === y);
+    // 目標位置
+    const isTarget = !gameCompleted && currentTarget < targets.length && 
+                    targets[currentTarget].x === x && targets[currentTarget].y === y;
 
-  // 家完成時に表示するオーバーレイ用スタイル
-  const overlayStyle = {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: "100%",
-    height: "100%",
-    backgroundColor: "rgba(255,255,255,0.8)",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 10,
-  };
+    let cellContent = null;
+    if (isCurrentBoard) {
+      cellContent = <div className="w-full h-full bg-yellow-700 rounded shadow-md" />;
+    } else if (isPlacedBoard) {
+      cellContent = <div className="w-full h-full bg-yellow-900 rounded shadow-md" />;
+    } else if (isTarget) {
+      cellContent = <div className="w-full h-full border-2 border-dashed border-red-500 rounded" />;
+    }
 
-  const houseContainerStyle = {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-  };
-
-  const roofStyle = {
-    width: 0,
-    height: 0,
-    borderLeft: "50px solid transparent",
-    borderRight: "50px solid transparent",
-    borderBottom: "50px solid #d35400",
-  };
-
-  const bodyStyle = {
-    width: "100px",
-    height: "80px",
-    backgroundColor: "#e74c3c",
-    border: "2px solid #c0392b",
+    return (
+      <div key={`${x}-${y}`} className="w-full h-full p-1">
+        {cellContent}
+      </div>
+    );
   };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100vh",
-        fontFamily: "sans-serif",
-      }}
-    >
-      <header
-        style={{
-          height: HEADER_HEIGHT,
-          background: "#ccc",
-          textAlign: "center",
-          padding: "10px",
-        }}
-      >
-        <h2>木の板トントンDIY</h2>
-        <p>矢印キーで板を移動し、スペースキーで釘を打ちます。</p>
+    <div className="min-h-screen flex flex-col bg-gray-100">
+      {/* ヘッダー */}
+      <header className="bg-blue-600 text-white p-4 text-center">
+        <h1 className="text-2xl font-bold">木の板トントンDIY</h1>
+        <p className="text-sm mt-2">
+          {gameCompleted ? '' : 'PCの場合は矢印キーで移動、スペースキーで板を固定'}
+        </p>
       </header>
 
-      <main
-        style={{
-          flexGrow: 1,
-          position: "relative",
-          backgroundColor: "#eee",
-          border: "2px solid #333",
-          overflow: "hidden",
-        }}
-      >
-        {/* 釘打ち済みの板 */}
-        {placedBoards.map((pos, index) => (
-          <div
-            key={index}
-            style={{
-              position: "absolute",
-              width: BOARD_WIDTH,
-              height: BOARD_HEIGHT,
-              backgroundColor: "saddlebrown",
-              left: pos.x,
-              top: pos.y,
-              boxSizing: "border-box",
-              zIndex: 1,
-            }}
-          />
-        ))}
+      {/* メインゲームエリア */}
+      <main className="flex-1 flex flex-col items-center justify-center p-4">
+        {/* グリッド */}
+        <div className="w-full max-w-lg aspect-[10/8] bg-gray-200 grid grid-cols-10 grid-rows-8 gap-px p-px">
+          {Array.from({ length: 8 }, (_, y) =>
+            Array.from({ length: 10 }, (_, x) => renderCell(x, y))
+          )}
+        </div>
 
-        {/* ターゲット位置（赤いアウトライン） */}
-        {currentSlotIndex < boardSlots.length && (
-          <div
-            style={{
-              position: "absolute",
-              width: BOARD_WIDTH,
-              height: BOARD_HEIGHT,
-              outline: "2px dashed red",
-              left: boardSlots[currentSlotIndex].x,
-              top: boardSlots[currentSlotIndex].y,
-              boxSizing: "border-box",
-              zIndex: 0,
-            }}
-          />
-        )}
+        {/* メッセージ表示 */}
+        <div className="mt-4 text-center text-lg font-medium text-gray-700">
+          {message}
+        </div>
 
-        {/* 現在操作中の木の板 */}
-        {currentSlotIndex < boardSlots.length && (
-          <div
-            style={{
-              position: "absolute",
-              width: BOARD_WIDTH,
-              height: BOARD_HEIGHT,
-              backgroundColor: "peru",
-              left: currentPosition.x,
-              top: currentPosition.y,
-              boxSizing: "border-box",
-              zIndex: 2,
-            }}
-          />
-        )}
-
-        {/* 家完成時のオーバーレイ */}
-        {currentSlotIndex >= boardSlots.length && (
-          <div style={overlayStyle}>
-            <div style={houseContainerStyle}>
-              <div style={roofStyle} />
-              <div style={bodyStyle} />
-            </div>
-            <h2>家が完成しました！</h2>
+        {/* モバイル用コントロール */}
+        <div className="mt-6 md:hidden">
+          <div className="grid grid-cols-3 gap-2 w-48 mx-auto">
+            <div />
+            <button
+              className="bg-gray-200 w-14 h-14 rounded-full text-2xl active:bg-gray-300 flex items-center justify-center"
+              onClick={() => moveBoard('up')}
+            >
+              ⬆️
+            </button>
+            <div />
+            
+            <button
+              className="bg-gray-200 p-4 rounded-full text-2xl active:bg-gray-300"
+              onClick={() => moveBoard('left')}
+            >
+              ⬅️
+            </button>
+            <button
+              className="bg-blue-500 w-14 h-14 rounded-full text-white font-bold active:bg-blue-600 flex items-center justify-center text-lg"
+              onClick={placeBoard}
+            >
+              トン
+            </button>
+            <button
+              className="bg-gray-200 p-4 rounded-full text-2xl active:bg-gray-300"
+              onClick={() => moveBoard('right')}
+            >
+              ➡️
+            </button>
+            
+            <div />
+            <button
+              className="bg-gray-200 p-4 rounded-full text-2xl active:bg-gray-300"
+              onClick={() => moveBoard('down')}
+            >
+              ⬇️
+            </button>
+            <div />
           </div>
-        )}
-
-        {/* 効果音用のオーディオ要素 */}
-        <audio
-          ref={placementAudioRef}
-          src="/handson-game-park/placement-sound.mp3"
-          preload="auto"
-        />
-        <audio
-          ref={completeAudioRef}
-          src="/handson-game-park/house-complete.mp3"
-          preload="auto"
-        />
+        </div>
       </main>
 
-      <footer
-        style={{
-          height: FOOTER_HEIGHT,
-          background: "#ccc",
-          textAlign: "center",
-          padding: "10px",
-        }}
-      >
-        <p>{message}</p>
-      </footer>
+      {/* クリア時のオーバーレイ */}
+      {gameCompleted && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-8 rounded-lg text-center">
+            <h2 className="text-2xl font-bold mb-4">🎉 完成！ 🎉</h2>
+            <div className="text-6xl mb-4">🏠</div>
+            <p>素敵な家が完成しました！</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default DIYHouseGame;
+export default DIYGame;
