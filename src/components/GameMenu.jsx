@@ -10,6 +10,7 @@ const GameMenu = () => {
   const [selectedGame, setSelectedGame] = useState(null);
   const [focusedGameIndex, setFocusedGameIndex] = useState(0);
   const gameButtonsRef = useRef([]);
+  const gameContainerRef = useRef(null);
 
   const games = useMemo(() => [
     {
@@ -62,7 +63,6 @@ const GameMenu = () => {
   }, [games]);
 
   const handleKeyDown = useCallback((e) => {
-    // ゲームプレイ中ならEscapeキーでメニューに戻る
     if (selectedGame) {
       if (e.key === 'Escape') {
         setSelectedGame(null);
@@ -70,7 +70,6 @@ const GameMenu = () => {
       return;
     }
 
-    // 対象のキーの場合、デフォルトのスクロール動作などを防止する
     if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Enter', ' '].includes(e.key)) {
       e.preventDefault();
     }
@@ -83,6 +82,13 @@ const GameMenu = () => {
       setSelectedGame(games[focusedGameIndex].id);
     }
   }, [selectedGame, focusedGameIndex, games]);
+
+  // ゲーム選択時にスクロールをトップに戻す
+  useEffect(() => {
+    if (selectedGame) {
+      window.scrollTo(0, 0);
+    }
+  }, [selectedGame]);
 
   // ゲームメニューが表示されているとき、focusedGameIndexに合わせてボタンにフォーカスする
   useEffect(() => {
@@ -100,11 +106,17 @@ const GameMenu = () => {
   if (selectedGame) {
     const GameComponent = games.find(game => game.id === selectedGame)?.component;
     return (
-      <div className="relative">
-        {GameComponent ? <GameComponent /> : <p>ゲームが見つかりません</p>}
+      <div className="fixed inset-0 bg-white overflow-auto" ref={gameContainerRef}>
+        {GameComponent ? (
+          <div className="min-h-screen">
+            <GameComponent />
+          </div>
+        ) : (
+          <p>ゲームが見つかりません</p>
+        )}
         <button
           onClick={() => setSelectedGame(null)}
-          className="absolute top-4 right-4 bg-white/80 hover:bg-white text-gray-800 px-4 py-2 rounded-full shadow-lg z-20 transition-colors"
+          className="fixed top-4 right-4 bg-white/80 hover:bg-white text-gray-800 px-4 py-2 rounded-full shadow-lg z-20 transition-colors"
           onFocus={() => setFocusedGameIndex(0)}
         >
           ゲーム選択に戻る
@@ -115,24 +127,26 @@ const GameMenu = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-400 to-purple-600 flex items-center justify-center p-4">
-      <div className="text-center">
-        <h1 className="text-5xl font-bold text-white mb-12 drop-shadow-lg">
+      <div className="text-center w-full">
+        <h1 className="text-4xl md:text-5xl font-bold text-white mb-8 md:mb-12 drop-shadow-lg">
           ミニゲーム選択
         </h1>
-        <div className="grid gap-6 md:grid-cols-2 max-w-4xl mx-auto">
+        <div className="grid gap-4 md:gap-6 md:grid-cols-2 max-w-4xl mx-auto">
           {games.map((game, index) => (
             <button
               key={game.id}
               onClick={() => setSelectedGame(game.id)}
-              className={`bg-white/90 hover:bg-white rounded-xl p-6 text-center transition-all transform hover:scale-105 shadow-lg ${focusedGameIndex === index ? 'ring-4 ring-purple-500' : ''}`}
+              className={`bg-white/90 hover:bg-white rounded-xl p-4 md:p-6 text-center transition-all transform hover:scale-105 shadow-lg ${
+                focusedGameIndex === index ? 'ring-4 ring-purple-500' : ''
+              }`}
               ref={el => (gameButtonsRef.current[index] = el)}
               onFocus={() => setFocusedGameIndex(index)}
             >
-              <div className="text-7xl mb-4">{game.emoji}</div>
-              <h2 className="text-2xl font-bold mb-2 text-gray-800">
+              <div className="text-5xl md:text-7xl mb-2 md:mb-4">{game.emoji}</div>
+              <h2 className="text-xl md:text-2xl font-bold mb-2 text-gray-800">
                 {game.title}
               </h2>
-              <p className="text-gray-600">{game.description}</p>
+              <p className="text-sm md:text-base text-gray-600">{game.description}</p>
             </button>
           ))}
         </div>
