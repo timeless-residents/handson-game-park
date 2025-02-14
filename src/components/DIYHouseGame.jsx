@@ -153,9 +153,9 @@ const DIYGame = () => {
       </header>
 
       {/* メインゲームエリア */}
-      <main className="flex-1 flex flex-col items-center justify-center p-4 overflow-auto">
+      <main className="flex flex-col items-center justify-center p-4">
         {/* グリッド */}
-        <div className="w-full max-w-sm sm:max-w-lg aspect-[10/8] bg-gray-200 grid grid-cols-10 grid-rows-8 gap-px p-px mx-auto">
+        <div className="w-full max-w-xs sm:max-w-sm aspect-[10/8] bg-gray-200 grid grid-cols-10 grid-rows-8 gap-px p-px mx-auto">
           {Array.from({ length: 8 }, (_, y) =>
             Array.from({ length: 10 }, (_, x) => renderCell(x, y))
           )}
@@ -179,7 +179,7 @@ const DIYGame = () => {
             <div />
             
             <button
-              className="bg-gray-200 p-4 rounded-full text-2xl active:bg-gray-300"
+              className="bg-gray-200 w-14 h-14 rounded-full text-2xl active:bg-gray-300"
               onClick={() => moveBoard('left')}
             >
               ⬅️
@@ -191,7 +191,7 @@ const DIYGame = () => {
               トン
             </button>
             <button
-              className="bg-gray-200 p-4 rounded-full text-2xl active:bg-gray-300"
+              className="bg-gray-200 w-14 h-14 rounded-full text-2xl active:bg-gray-300"
               onClick={() => moveBoard('right')}
             >
               ➡️
@@ -199,7 +199,7 @@ const DIYGame = () => {
             
             <div />
             <button
-              className="bg-gray-200 p-4 rounded-full text-2xl active:bg-gray-300"
+              className="bg-gray-200 w-14 h-14 rounded-full text-2xl active:bg-gray-300"
               onClick={() => moveBoard('down')}
             >
               ⬇️
