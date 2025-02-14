@@ -1,15 +1,16 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import NyankoJump from './NyankoJump';
 import LizardGame from './LizardGame';
 import DIYHouseGame from './DIYHouseGame';
 import CandyRocketGame from './CandyRocketGame';
+import HeartRunnerGame from './HeartRunnerGame';
 
 const GameMenu = () => {
   const [selectedGame, setSelectedGame] = useState(null);
   const [focusedGameIndex, setFocusedGameIndex] = useState(0);
   const gameButtonsRef = useRef([]);
 
-  const games = [
+  const games = useMemo(() => [
     {
       id: 'nyanko',
       title: 'にゃんこジャンプ',
@@ -37,22 +38,22 @@ const GameMenu = () => {
       emoji: '🚀',
       description: '矢印キーでキャンディを点火位置に置き、スペースキーで発射して空中の星を取る',
       component: CandyRocketGame
+    },
+    {
+      id: 'heart-runner',
+      title: 'ハート集めランナー',
+      emoji: '🏃‍♀️',
+      description: '走りながらハートを集めてスコアを競おう！',
+      component: HeartRunnerGame
     }
-  ];
+  ], []);
 
   // ボタン参照の配列をgamesの数に合わせる
   useEffect(() => {
     gameButtonsRef.current = gameButtonsRef.current.slice(0, games.length);
   }, [games]);
 
-  // ゲームメニューが表示されているとき、focusedGameIndexに合わせてボタンにフォーカスする
-  useEffect(() => {
-    if (!selectedGame && gameButtonsRef.current[focusedGameIndex]) {
-      gameButtonsRef.current[focusedGameIndex].focus();
-    }
-  }, [selectedGame, focusedGameIndex]);
-
-  const handleKeyDown = (e) => {
+  const handleKeyDown = useCallback((e) => {
     // ゲームプレイ中ならEscapeキーでメニューに戻る
     if (selectedGame) {
       if (e.key === 'Escape') {
@@ -73,13 +74,20 @@ const GameMenu = () => {
     } else if (e.key === 'Enter' || e.key === ' ') {
       setSelectedGame(games[focusedGameIndex].id);
     }
-  };
+  }, [selectedGame, focusedGameIndex, games]);
+
+  // ゲームメニューが表示されているとき、focusedGameIndexに合わせてボタンにフォーカスする
+  useEffect(() => {
+    if (!selectedGame && gameButtonsRef.current[focusedGameIndex]) {
+      gameButtonsRef.current[focusedGameIndex].focus();
+    }
+  }, [selectedGame, focusedGameIndex]);
 
   // window全体でキーボードイベントを監視する
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedGame, focusedGameIndex]);
+  }, [handleKeyDown]);
 
   if (selectedGame) {
     const GameComponent = games.find(game => game.id === selectedGame)?.component;
