@@ -13,32 +13,11 @@ const GameMenu = () => {
 
   const games = useMemo(() => [
     {
-      id: 'nyanko',
-      title: 'にゃんこジャンプ',
-      emoji: '😺',
-      description: '魚を集めながらジャンプで冒険しよう！',
-      component: NyankoJump
-    },
-    {
-      id: 'lizard',
-      title: 'トカゲのせんぷう機乗り',
-      emoji: '🦎',
-      description: '壁を登って昆虫をキャッチしよう！',
-      component: LizardGame
-    },
-    {
-      id: 'diy',
-      title: '木の板トントンDIY',
-      emoji: '🔨',
-      description: '矢印キーで板を移動し、スペースキーで釘を打っておうちを完成させる',
-      component: DIYHouseGame
-    },
-    {
-      id: 'candy-rocket',
-      title: 'キャンディロケット体操',
-      emoji: '🚀',
-      description: '矢印キーでキャンディを点火位置に置き、スペースキーで発射して空中の星を取る',
-      component: CandyRocketGame
+      id: 'shaka-nuka-zuke',
+      title: 'シャカシャカぬか漬け',
+      emoji: '🍆',
+      description: '矢印キーで野菜を入れ、スペースキーでぬか床をかき混ぜる',
+      component: ShakaShakaNukaZukeGame
     },
     {
       id: 'heart-runner',
@@ -48,11 +27,32 @@ const GameMenu = () => {
       component: HeartRunnerGame
     },
     {
-      id: 'shaka-nuka-zuke',
-      title: 'シャカシャカぬか漬け',
-      emoji: '🍆',
-      description: '矢印キーで野菜を入れ、スペースキーでぬか床をかき混ぜる',
-      component: ShakaShakaNukaZukeGame
+      id: 'candy-rocket',
+      title: 'キャンディロケット体操',
+      emoji: '🚀',
+      description: '矢印キーでキャンディを点火位置に置き、スペースキーで発射して空中の星を取る',
+      component: CandyRocketGame
+    },
+    {
+      id: 'diy',
+      title: '木の板トントンDIY',
+      emoji: '🔨',
+      description: '矢印キーで板を移動し、スペースキーで釘を打っておうちを完成させる',
+      component: DIYHouseGame
+    },
+    {
+      id: 'lizard',
+      title: 'トカゲのせんぷう機乗り',
+      emoji: '🦎',
+      description: '壁を登って昆虫をキャッチしよう！',
+      component: LizardGame
+    },
+    {
+      id: 'nyanko',
+      title: 'にゃんこジャンプ',
+      emoji: '😺',
+      description: '魚を集めながらジャンプで冒険しよう！',
+      component: NyankoJump
     }
   ], []);
 
