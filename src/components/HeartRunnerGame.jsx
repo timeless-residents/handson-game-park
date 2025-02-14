@@ -1,26 +1,25 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 
 const HeartRunnerGame = () => {
-  // モバイル判定（画面幅768px未満の場合）
+  // 定数
+  const MOVE_SPEED = 5; // 移動速度
   const isMobile = window.innerWidth < 768;
-  // 土（地面）の拡張部分の高さ（Tailwind の h-48＝約12rem＝192px）
-  const soilHeight = 192;
-  // ゲームエリアの高さ：モバイルの場合は画面高さから土の高さを引く、PCの場合は画面の80%または700pxの小さい方
-  const GAME_HEIGHT = isMobile ? window.innerHeight - soilHeight : Math.min(700, window.innerHeight * 0.8);
+  // ゲームエリアの高さを全画面に（モバイルでもPCでも全画面）
+  const GAME_HEIGHT = window.innerHeight;
   const GROUND_HEIGHT = 64; // ゲーム内での地面部分（草＋土）の高さ
 
-  // プレイヤーの足元が地面に接するための中心位置
-  const playerRestY = GAME_HEIGHT - GROUND_HEIGHT - (40 / 2); // PLAYER_SIZE = 40
+  // プレイヤーの足元が地面に接するための中心位置（PLAYER_SIZE = 40）
+  const playerRestY = GAME_HEIGHT - GROUND_HEIGHT - (40 / 2);
   // 最大ジャンプ到達高さ（物理計算）
   const maxJumpHeight = (Math.abs(-18) ** 2) / (2 * 0.8);
   // プレイヤーの中心が到達できる最上部
   const apexY = playerRestY - maxJumpHeight;
 
-  // 初期位置：画面左側、足元が地面に接する位置
-  const initialPosition = { 
-    x: window.innerWidth / 4, 
-    y: playerRestY 
-  };
+  // 初期位置：useMemo でラップ（playerRestY に依存）
+  const initialPosition = useMemo(() => ({
+    x: window.innerWidth / 4,
+    y: playerRestY,
+  }), [playerRestY]);
 
   // プレイヤーの最新位置（衝突判定用）
   const playerPosRef = useRef(initialPosition);
@@ -86,6 +85,22 @@ const HeartRunnerGame = () => {
     }
   }, [isJumping, gameOver, gameStarted, playSound]);
 
+  // 初期オブジェクトを即座に生成する関数
+  const spawnInitialObjects = useCallback(() => {
+    const initialHeart = {
+      x: window.innerWidth,
+      y: Math.random() * (playerRestY - apexY) + apexY,
+      id: Date.now() + Math.random(),
+    };
+    const initialObstacle = {
+      x: window.innerWidth,
+      y: playerRestY,
+      id: Date.now() + Math.random(),
+    };
+    setHearts([initialHeart]);
+    setObstacles([initialObstacle]);
+  }, [playerRestY, apexY]);
+
   // ゲーム開始／再スタート
   const startGame = useCallback(() => {
     setGameStarted(true);
@@ -98,7 +113,8 @@ const HeartRunnerGame = () => {
     setObstacles([]);
     setIsJumping(false);
     setDirection('right');
-  }, [initialPosition]);
+    spawnInitialObjects();
+  }, [initialPosition, spawnInitialObjects]);
 
   // ゲームオーバー処理
   const handleGameOver = useCallback(() => {
@@ -170,6 +186,7 @@ const HeartRunnerGame = () => {
       setPosition(newPos);
       setVelocity(v => ({ ...v, y: newVelocityY }));
 
+      // ハート出現
       if (Math.random() < 0.02) {
         const heartY = Math.random() * (playerRestY - apexY) + apexY;
         setHearts(prev => [
@@ -178,6 +195,7 @@ const HeartRunnerGame = () => {
         ]);
       }
 
+      // 障害物出現
       if (Math.random() < 0.01) {
         setObstacles(prev => [
           ...prev,
@@ -230,17 +248,17 @@ const HeartRunnerGame = () => {
   ]);
 
   return (
-    // 外側コンテナは全画面を覆います
-    <div className="w-screen min-h-screen bg-gradient-to-b from-blue-200 to-blue-400 flex flex-col items-center overflow-hidden">
+    // 外側コンテナ：全画面表示
+    <div className="w-screen h-screen bg-gradient-to-b from-blue-200 to-blue-400 flex flex-col items-center overflow-hidden">
       {/* スコア表示 */}
       <div className="absolute top-4 left-0 w-full text-center z-10">
         <div className="text-4xl font-bold text-white drop-shadow-lg">❤️ {score}</div>
       </div>
 
-      {/* ゲームエリア */}
+      {/* ゲームエリア（全画面） */}
       <div 
         className="relative bg-gradient-to-b from-blue-300 to-blue-400 rounded-lg shadow-lg overflow-hidden"
-        style={{ width: '100%', maxWidth: '1200px', height: GAME_HEIGHT }}
+        style={{ width: '100%', height: GAME_HEIGHT }}
       >
         {/* キャラクター */}
         <div
@@ -287,12 +305,7 @@ const HeartRunnerGame = () => {
         </div>
       </div>
 
-      {/* 土の拡張部分（モバイルのみ）：画面下部まで土の背景を延長 */}
-      {isMobile && (
-        <div className="w-full h-48 bg-gradient-to-b from-orange-700 to-orange-900 md:hidden"></div>
-      )}
-
-      {/* モバイル用操作パネル：土の拡張部分より上（bottom: 128px）に配置 */}
+      {/* モバイル用操作パネル：全画面の場合は固定位置（bottom: 68px） */}
       {gameStarted && !gameOver && (
         <div className="fixed left-0 w-full flex justify-between px-8 md:hidden" style={{ bottom: '68px' }}>
           <div className="flex gap-4">
@@ -339,8 +352,8 @@ const HeartRunnerGame = () => {
               タップしてスタート！
             </button>
             <p className="mt-4 text-lg">
-              {window.innerWidth > 768 ? 
-                "← →キーで移動、スペースでジャンプ/再挑戦" : 
+              {window.innerWidth > 768 ?
+                "← →キーで移動、スペースでジャンプ/再挑戦" :
                 "画面下のボタンで操作してね！"}
             </p>
           </div>
