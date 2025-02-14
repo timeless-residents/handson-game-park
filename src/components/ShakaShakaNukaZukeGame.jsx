@@ -11,7 +11,7 @@ const ShakaShakaNukaZukeGame = () => {
   // 画面幅に応じたモバイル判定
   const isMobile = window.innerWidth < 768;
   // ぬか床エリアの高さを画面の80%に設定
-  const nukaBedHeight = window.innerHeight * 0.6;
+  const nukaBedHeight = window.innerHeight * 0.4;
   // 画面全体の幅
   const screenWidth = window.innerWidth;
   

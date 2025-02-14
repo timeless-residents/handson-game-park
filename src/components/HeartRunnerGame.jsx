@@ -1,31 +1,29 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 
 const HeartRunnerGame = () => {
-  // 定数
-  const MOVE_SPEED = 5; // 移動速度
-  // ゲームエリアの高さを全画面に（モバイルでもPCでも全画面）
-  const GAME_HEIGHT = window.innerHeight;
-  const GROUND_HEIGHT = 64; // ゲーム内での地面部分（草＋土）の高さ
+  // スマホ判定
+  const isMobile = window.innerWidth <= 768;
+  const CONTROL_PANEL_HEIGHT = 68; // 操作パネルの高さ
 
-  // プレイヤーの足元が地面に接するための中心位置（PLAYER_SIZE = 40）
-  const playerRestY = GAME_HEIGHT - GROUND_HEIGHT - (40 / 2);
-  // 最大ジャンプ到達高さ（物理計算）
+  // ゲームエリアの高さ（スマホの場合は操作パネル分除外）
+  const GAME_HEIGHT = isMobile ? window.innerHeight - CONTROL_PANEL_HEIGHT : window.innerHeight;
+  
+  const GROUND_HEIGHT = 64; // 地面の高さ
+  const PLAYER_SIZE = 40; // キャラクターサイズ
+
+  // キャラクターの足元が地面に接する位置
+  const playerRestY = GAME_HEIGHT - GROUND_HEIGHT - (PLAYER_SIZE / 2);
   const maxJumpHeight = (Math.abs(-18) ** 2) / (2 * 0.8);
-  // プレイヤーの中心が到達できる最上部
   const apexY = playerRestY - maxJumpHeight;
 
-  // 初期位置：useMemo でラップ（playerRestY に依存）
   const initialPosition = useMemo(() => ({
     x: window.innerWidth / 4,
     y: playerRestY,
   }), [playerRestY]);
 
-  // プレイヤーの最新位置（衝突判定用）
   const playerPosRef = useRef(initialPosition);
-  // AudioContext の再利用用（ユーザー操作後に生成）
   const audioCtxRef = useRef(null);
 
-  // 各種状態
   const [position, setPosition] = useState(initialPosition);
   const [velocity, setVelocity] = useState({ x: 0, y: 0 });
   const [isJumping, setIsJumping] = useState(false);
@@ -36,10 +34,8 @@ const HeartRunnerGame = () => {
   const [obstacles, setObstacles] = useState([]);
   const [isMovingLeft, setIsMovingLeft] = useState(false);
   const [isMovingRight, setIsMovingRight] = useState(false);
-  // 向き状態：使用している🏃は元々左向きなので、右向き表示には scaleX(-1) を使用
   const [direction, setDirection] = useState('right');
 
-  // AudioContext の再利用＆生成（ユーザー操作後）
   const playSound = useCallback((type) => {
     if (!audioCtxRef.current) {
       audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
@@ -75,16 +71,14 @@ const HeartRunnerGame = () => {
     oscillator.stop(audioContext.currentTime + 0.2);
   }, []);
 
-  // ジャンプ処理
   const jump = useCallback(() => {
     if (!isJumping && !gameOver && gameStarted) {
       setIsJumping(true);
-      setVelocity(v => ({ ...v, y: -18 })); // JUMP_POWER = -18
+      setVelocity(v => ({ ...v, y: -18 }));
       playSound('jump');
     }
   }, [isJumping, gameOver, gameStarted, playSound]);
 
-  // 初期オブジェクトを即座に生成する関数
   const spawnInitialObjects = useCallback(() => {
     const initialHeart = {
       x: window.innerWidth,
@@ -100,7 +94,6 @@ const HeartRunnerGame = () => {
     setObstacles([initialObstacle]);
   }, [playerRestY, apexY]);
 
-  // ゲーム開始／再スタート
   const startGame = useCallback(() => {
     setGameStarted(true);
     setGameOver(false);
@@ -115,13 +108,11 @@ const HeartRunnerGame = () => {
     spawnInitialObjects();
   }, [initialPosition, spawnInitialObjects]);
 
-  // ゲームオーバー処理
   const handleGameOver = useCallback(() => {
     setGameOver(true);
     playSound('hit');
   }, [playSound]);
 
-  // キーボード操作（スマホでもタップ操作にも対応）
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === ' ') {
@@ -165,16 +156,16 @@ const HeartRunnerGame = () => {
     };
   }, [gameOver, gameStarted, jump, startGame]);
 
-  // ゲームループ（60FPS）
   useEffect(() => {
     if (!gameStarted || gameOver) return;
+    const MOVE_SPEED = 5;
     const gameLoop = setInterval(() => {
       const prevPos = playerPosRef.current;
       const movement = (isMovingRight ? MOVE_SPEED : 0) - (isMovingLeft ? MOVE_SPEED : 0);
-      const newX = Math.max(0, Math.min(window.innerWidth - 40, prevPos.x + movement)); // PLAYER_SIZE = 40
+      const newX = Math.max(0, Math.min(window.innerWidth - PLAYER_SIZE, prevPos.x + movement));
       
       let newY = prevPos.y + velocity.y;
-      let newVelocityY = velocity.y + 0.8; // GRAVITY = 0.8
+      let newVelocityY = velocity.y + 0.8;
       if (newY >= playerRestY) {
         newY = playerRestY;
         newVelocityY = 0;
@@ -185,7 +176,6 @@ const HeartRunnerGame = () => {
       setPosition(newPos);
       setVelocity(v => ({ ...v, y: newVelocityY }));
 
-      // ハート出現
       if (Math.random() < 0.02) {
         const heartY = Math.random() * (playerRestY - apexY) + apexY;
         setHearts(prev => [
@@ -194,7 +184,6 @@ const HeartRunnerGame = () => {
         ]);
       }
 
-      // 障害物出現
       if (Math.random() < 0.01) {
         setObstacles(prev => [
           ...prev,
@@ -208,7 +197,7 @@ const HeartRunnerGame = () => {
           const dx = newHeartX - playerPosRef.current.x;
           const dy = heart.y - playerPosRef.current.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
-          if (distance < 40 * 1.5) {
+          if (distance < PLAYER_SIZE * 1.5) {
             setScore(s => s + 1);
             playSound('collect');
             return acc;
@@ -224,7 +213,7 @@ const HeartRunnerGame = () => {
           const dx = newObstacleX - playerPosRef.current.x;
           const dy = obstacle.y - playerPosRef.current.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
-          if (distance < 40 - 10) {
+          if (distance < PLAYER_SIZE - 10) {
             handleGameOver();
             return acc;
           }
@@ -243,18 +232,18 @@ const HeartRunnerGame = () => {
     playSound,
     handleGameOver,
     playerRestY,
-    apexY
+    apexY,
+    PLAYER_SIZE
   ]);
 
   return (
-    // 外側コンテナ：全画面表示
     <div className="w-screen h-screen bg-gradient-to-b from-blue-200 to-blue-400 flex flex-col items-center overflow-hidden">
       {/* スコア表示 */}
       <div className="absolute top-24 left-0 w-full text-center z-10">
         <div className="text-4xl font-bold text-white drop-shadow-lg">❤️ {score}</div>
       </div>
 
-      {/* ゲームエリア（全画面） */}
+      {/* ゲームエリア（操作パネル分を除いた高さ） */}
       <div 
         className="relative bg-gradient-to-b from-blue-300 to-blue-400 rounded-lg shadow-lg overflow-hidden"
         style={{ width: '100%', height: GAME_HEIGHT }}
@@ -297,51 +286,55 @@ const HeartRunnerGame = () => {
           </div>
         ))}
 
-        {/* 地面（ゲームエリア内）：下部に草と土を描画 */}
-        <div className="absolute bottom-0 w-full">
+        {/* 地面 */}
+        <div className="absolute left-0 w-full bottom-0">
           <div className="h-8 bg-green-400" /> {/* 草 */}
           <div className="h-8 bg-gradient-to-b from-orange-700 to-orange-900" /> {/* 土 */}
         </div>
       </div>
 
-      {/* モバイル用操作パネル：全画面の場合は固定位置（bottom: 68px） */}
-      {gameStarted && !gameOver && (
-        <div className="fixed left-0 w-full flex justify-between px-8 md:hidden" style={{ bottom: '68px' }}>
-          <div className="flex gap-4">
-            <button
-              className="w-16 h-16 bg-white/50 rounded-full flex items-center justify-center text-4xl backdrop-blur-sm active:bg-white/30"
-              onTouchStart={() => { setIsMovingLeft(true); setDirection('left'); }}
-              onTouchEnd={() => setIsMovingLeft(false)}
-              onMouseDown={() => { setIsMovingLeft(true); setDirection('left'); }}
-              onMouseUp={() => setIsMovingLeft(false)}
-              onMouseLeave={() => setIsMovingLeft(false)}
-            >
-              ⬅️
-            </button>
-            <button
-              className="w-16 h-16 bg-white/50 rounded-full flex items-center justify-center text-4xl backdrop-blur-sm active:bg-white/30"
-              onTouchStart={() => { setIsMovingRight(true); setDirection('right'); }}
-              onTouchEnd={() => setIsMovingRight(false)}
-              onMouseDown={() => { setIsMovingRight(true); setDirection('right'); }}
-              onMouseUp={() => setIsMovingRight(false)}
-              onMouseLeave={() => setIsMovingRight(false)}
-            >
-              ➡️
-            </button>
-          </div>
-          <button
-            className="w-24 h-24 bg-white/50 rounded-full flex items-center justify-center text-4xl backdrop-blur-sm active:bg-white/30"
-            onTouchStart={jump}
-            onMouseDown={jump}
-          >
-            ⬆️
-          </button>
-        </div>
-      )}
+      {/* モバイル用操作パネル（画面下部に固定） */}
+      {gameStarted && !gameOver && isMobile && (
+  <div
+    className="fixed left-0 w-full flex justify-between items-center px-8 md:hidden z-50 bg-[#8B4513] py-4"
+    style={{ bottom: '0' }}
+  >
+    <div className="flex gap-4">
+      <button
+        className="w-16 h-16 bg-white/50 rounded-full flex items-center justify-center text-4xl backdrop-blur-sm active:bg-white/30"
+        onTouchStart={() => { setIsMovingLeft(true); setDirection('left'); }}
+        onTouchEnd={() => setIsMovingLeft(false)}
+        onMouseDown={() => { setIsMovingLeft(true); setDirection('left'); }}
+        onMouseUp={() => setIsMovingLeft(false)}
+        onMouseLeave={() => setIsMovingLeft(false)}
+      >
+        ⬅️
+      </button>
+      <button
+        className="w-16 h-16 bg-white/50 rounded-full flex items-center justify-center text-4xl backdrop-blur-sm active:bg-white/30"
+        onTouchStart={() => { setIsMovingRight(true); setDirection('right'); }}
+        onTouchEnd={() => setIsMovingRight(false)}
+        onMouseDown={() => { setIsMovingRight(true); setDirection('right'); }}
+        onMouseUp={() => setIsMovingRight(false)}
+        onMouseLeave={() => setIsMovingRight(false)}
+      >
+        ➡️
+      </button>
+    </div>
+    <button
+      className="w-24 h-24 bg-white/50 rounded-full flex items-center justify-center text-4xl backdrop-blur-sm active:bg-white/30"
+      onTouchStart={jump}
+      onMouseDown={jump}
+    >
+      ⬆️
+    </button>
+  </div>
+)}
+
 
       {/* スタート画面 */}
       {!gameStarted && (
-        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+        <div className="absolute inset-0 bg-black flex items-center justify-center">
           <div className="text-center text-white">
             <h1 className="text-4xl font-bold mb-8">ハート集めランナー</h1>
             <button
@@ -360,21 +353,22 @@ const HeartRunnerGame = () => {
       )}
 
       {/* ゲームオーバー画面 */}
-      {gameOver && (
-        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-          <div className="text-center text-white">
-            <h2 className="text-4xl font-bold mb-4">ゲームオーバー</h2>
-            <p className="text-2xl mb-8">スコア: {score}❤️</p>
-            <p className="mb-4 text-lg">スペースキーまたはタップで再挑戦できます</p>
-            <button
-              className="bg-white/20 backdrop-blur-sm px-8 py-4 rounded-xl text-2xl active:bg-white/10"
-              onClick={startGame}
-            >
-              もう一度挑戦！
-            </button>
-          </div>
-        </div>
-      )}
+{gameOver && (
+  <div className="absolute inset-0 bg-black flex items-center justify-center z-20">
+    <div className="text-center text-white">
+      <h2 className="text-4xl font-bold mb-4">ゲームオーバー</h2>
+      <p className="text-2xl mb-8">スコア: {score}❤️</p>
+      <p className="mb-4 text-lg">スペースキーまたはタップで再挑戦できます</p>
+      <button
+        className="bg-white/20 backdrop-blur-sm px-8 py-4 rounded-xl text-2xl active:bg-white/10"
+        onClick={startGame}
+      >
+        もう一度挑戦！
+      </button>
+    </div>
+  </div>
+)}
+
     </div>
   );
 };

@@ -145,7 +145,7 @@ const DIYGame = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
       {/* ヘッダー */}
-      <header className="bg-blue-600 text-white p-4 pt-16 text-center">
+      <header className="bg-blue-600 text-white p-4 pt-20 text-center sticky top-0 z-10">
         <h1 className="text-2xl font-bold">木の板トントンDIY</h1>
         <p className="text-sm mt-2">
           {gameCompleted ? '' : 'PCの場合は矢印キーで移動、スペースキーで板を固定'}
@@ -153,9 +153,9 @@ const DIYGame = () => {
       </header>
 
       {/* メインゲームエリア */}
-      <main className="flex-1 flex flex-col items-center justify-center p-4">
+      <main className="flex-1 flex flex-col items-center justify-center p-4 overflow-auto">
         {/* グリッド */}
-        <div className="w-full max-w-lg aspect-[10/8] bg-gray-200 grid grid-cols-10 grid-rows-8 gap-px p-px">
+        <div className="w-full max-w-sm sm:max-w-lg aspect-[10/8] bg-gray-200 grid grid-cols-10 grid-rows-8 gap-px p-px mx-auto">
           {Array.from({ length: 8 }, (_, y) =>
             Array.from({ length: 10 }, (_, x) => renderCell(x, y))
           )}
@@ -168,10 +168,10 @@ const DIYGame = () => {
 
         {/* モバイル用コントロール */}
         <div className="mt-6 md:hidden">
-          <div className="grid grid-cols-3 gap-2 w-48 mx-auto">
+          <div className="grid grid-cols-3 gap-2 w-40 sm:w-48 mx-auto">
             <div />
             <button
-              className="bg-gray-200 w-14 h-14 rounded-full text-2xl active:bg-gray-300 flex items-center justify-center"
+              className="bg-gray-200 w-14 h-14 rounded-full text-2xl active:bg-gray-300"
               onClick={() => moveBoard('up')}
             >
               ⬆️
