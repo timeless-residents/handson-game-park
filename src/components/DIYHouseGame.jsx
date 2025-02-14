@@ -145,7 +145,7 @@ const DIYGame = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
       {/* ヘッダー */}
-      <header className="bg-blue-600 text-white p-4 text-center">
+      <header className="bg-blue-600 text-white p-4 pt-16 text-center">
         <h1 className="text-2xl font-bold">木の板トントンDIY</h1>
         <p className="text-sm mt-2">
           {gameCompleted ? '' : 'PCの場合は矢印キーで移動、スペースキーで板を固定'}

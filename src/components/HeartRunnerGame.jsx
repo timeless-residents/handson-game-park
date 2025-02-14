@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 const HeartRunnerGame = () => {
   // 定数
   const MOVE_SPEED = 5; // 移動速度
-  const isMobile = window.innerWidth < 768;
   // ゲームエリアの高さを全画面に（モバイルでもPCでも全画面）
   const GAME_HEIGHT = window.innerHeight;
   const GROUND_HEIGHT = 64; // ゲーム内での地面部分（草＋土）の高さ
@@ -251,7 +250,7 @@ const HeartRunnerGame = () => {
     // 外側コンテナ：全画面表示
     <div className="w-screen h-screen bg-gradient-to-b from-blue-200 to-blue-400 flex flex-col items-center overflow-hidden">
       {/* スコア表示 */}
-      <div className="absolute top-4 left-0 w-full text-center z-10">
+      <div className="absolute top-24 left-0 w-full text-center z-10">
         <div className="text-4xl font-bold text-white drop-shadow-lg">❤️ {score}</div>
       </div>
 

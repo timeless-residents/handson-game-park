@@ -169,7 +169,7 @@ const CandyRocketGame = () => {
       style={{ height: "calc(var(--vh, 1vh) * 100)" }}
     >
       {/* ヘッダー */}
-      <header className="flex-shrink-0 mb-2">
+      <header className="flex-shrink-0 mt-24 mb-2">
         <div className="bg-white/90 rounded-lg p-2 shadow-lg flex justify-between items-center">
           <h1 className="text-xl font-bold text-purple-800 leading-tight">
             キャンディロケット体操

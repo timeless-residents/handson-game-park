@@ -4,6 +4,7 @@ import LizardGame from './LizardGame';
 import DIYHouseGame from './DIYHouseGame';
 import CandyRocketGame from './CandyRocketGame';
 import HeartRunnerGame from './HeartRunnerGame';
+import ShakaShakaNukaZukeGame from './ShakaShakaNukaZukeGame';
 
 const GameMenu = () => {
   const [selectedGame, setSelectedGame] = useState(null);
@@ -45,6 +46,13 @@ const GameMenu = () => {
       emoji: '🏃‍♀️',
       description: '走りながらハートを集めてスコアを競おう！',
       component: HeartRunnerGame
+    },
+    {
+      id: 'shaka-nuka-zuke',
+      title: 'シャカシャカぬか漬け',
+      emoji: '🍆',
+      description: '矢印キーで野菜を入れ、スペースキーでぬか床をかき混ぜる',
+      component: ShakaShakaNukaZukeGame
     }
   ], []);
 
