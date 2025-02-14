@@ -16,6 +16,18 @@ const NyankoJump = () => {
   const [isMovingLeft, setIsMovingLeft] = useState(false);
   const [isMovingRight, setIsMovingRight] = useState(false);
 
+  // モバイル端末でのビューポート高さ調整用CSS変数の設定
+  useEffect(() => {
+    const setVh = () => {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+    };
+
+    setVh();
+    window.addEventListener('resize', setVh);
+    return () => window.removeEventListener('resize', setVh);
+  }, []);
+
   // ウィンドウサイズの変更を監視
   useEffect(() => {
     const handleResize = () => {
@@ -42,7 +54,7 @@ const NyankoJump = () => {
 
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
-    
+
     oscillator.connect(gainNode);
     gainNode.connect(audioContext.destination);
 
@@ -52,7 +64,7 @@ const NyankoJump = () => {
       oscillator.frequency.exponentialRampToValueAtTime(300, audioContext.currentTime + 0.2);
       gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
       gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-      
+
       oscillator.start();
       oscillator.stop(audioContext.currentTime + 0.2);
     } else if (type === 'collect') {
@@ -61,7 +73,7 @@ const NyankoJump = () => {
       oscillator.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.1);
       gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
       gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
-      
+
       oscillator.start();
       oscillator.stop(audioContext.currentTime + 0.1);
     }
@@ -73,7 +85,7 @@ const NyankoJump = () => {
     setScore(0);
     setIsGrounded(true);
     setGameStarted(true);
-    
+
     const initialFishes = Array.from({ length: 5 }, () => ({
       x: Math.random() * (dimensions.width - 100) + 50,
       y: Math.random() * (dimensions.height - 200) + 50,
@@ -171,7 +183,7 @@ const NyankoJump = () => {
           const dx = fish.x - position.x;
           const dy = fish.y - position.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
-          
+
           if (distance < 30) {
             setScore(s => s + 1);
             playSound('collect');
@@ -199,7 +211,10 @@ const NyankoJump = () => {
   }, [gameStarted, position, velocity, dimensions.height, dimensions.width, playSound]);
 
   return (
-    <div className="w-screen h-screen overflow-hidden">
+    <div
+      className="w-screen overflow-hidden"
+      style={{ height: "calc(var(--vh, 1vh) * 100)" }}
+    >
       <div className="absolute top-12 left-0 w-full text-center z-10 p-8 pointer-events-none">
         <h1 className="text-4xl font-bold mb-4 text-white drop-shadow-lg">🐱 にゃんこジャンプ</h1>
         <div className="text-4xl text-white drop-shadow-lg">スコア: {score} 🐠</div>
@@ -238,7 +253,7 @@ const NyankoJump = () => {
 
         {/* コントロールボタン */}
         {gameStarted && (
-          <div className="absolute bottom-28 left-0 w-full flex justify-between px-8 z-20">
+          <div className="absolute bottom-0 left-0 w-full flex justify-between px-8 z-20">
             <div className="flex gap-4">
               <button
                 className="w-16 h-16 bg-white/50 rounded-full flex items-center justify-center text-4xl backdrop-blur-sm active:bg-white/30"
