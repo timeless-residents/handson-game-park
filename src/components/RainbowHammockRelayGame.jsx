@@ -44,8 +44,10 @@ const RainbowHammockRelayGame = () => {
 
   useEffect(() => {
     // ※サウンドファイルのパスは適宜変更してください
-    actionAudioRef.current = new Audio("/sounds/action.mp3");
-    successAudioRef.current = new Audio("/sounds/success.mp3");
+    actionAudioRef.current = new Audio("/handson-game-park/sounds/action.mp3");
+    successAudioRef.current = new Audio(
+      "/handson-game-park/sounds/success.mp3"
+    );
   }, []);
 
   // ビューポート高さ調整（モバイル対応：CSS変数 --vh の設定）
@@ -103,8 +105,13 @@ const RainbowHammockRelayGame = () => {
       if (waitingAnimals.length === 0) {
         setWaitingAnimals(generateWaitingAnimals());
       }
+      // ゲームクリア時に成功音を再生する
       if (newScore >= TARGET_SCORE) {
         setIsGameClear(true);
+        if (successAudioRef.current) {
+          successAudioRef.current.currentTime = 0;
+          successAudioRef.current.play();
+        }
       }
     }
 
