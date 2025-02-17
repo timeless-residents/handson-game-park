@@ -1,10 +1,11 @@
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import NyankoJump from './NyankoJump';
-import LizardGame from './LizardGame';
-import DIYHouseGame from './DIYHouseGame';
-import CandyRocketGame from './CandyRocketGame';
-import HeartRunnerGame from './HeartRunnerGame';
-import ShakaShakaNukaZukeGame from './ShakaShakaNukaZukeGame';
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import NyankoJump from "./NyankoJump";
+import LizardGame from "./LizardGame";
+import DIYHouseGame from "./DIYHouseGame";
+import CandyRocketGame from "./CandyRocketGame";
+import HeartRunnerGame from "./HeartRunnerGame";
+import ShakaShakaNukaZukeGame from "./ShakaShakaNukaZukeGame";
+import RainbowHammockRelayGame from "./RainbowHammockRelayGame";
 
 const GameMenu = () => {
   const [selectedGame, setSelectedGame] = useState(null);
@@ -12,76 +13,104 @@ const GameMenu = () => {
   const gameButtonsRef = useRef([]);
   const gameContainerRef = useRef(null);
 
-  const games = useMemo(() => [
-    {
-      id: 'shaka-nuka-zuke',
-      title: 'シャカシャカぬか漬け',
-      emoji: '🍆',
-      description: '矢印キーで野菜を入れ、スペースキーでぬか床をかき混ぜる',
-      component: ShakaShakaNukaZukeGame
-    },
-    {
-      id: 'heart-runner',
-      title: 'ハート集めランナー',
-      emoji: '🏃‍♀️',
-      description: '走りながらハートを集めてスコアを競おう！',
-      component: HeartRunnerGame
-    },
-    {
-      id: 'candy-rocket',
-      title: 'キャンディロケット体操',
-      emoji: '🚀',
-      description: '矢印キーでキャンディを点火位置に置き、スペースキーで発射して空中の星を取る',
-      component: CandyRocketGame
-    },
-    {
-      id: 'diy',
-      title: '木の板トントンDIY',
-      emoji: '🔨',
-      description: '矢印キーで板を移動し、スペースキーで釘を打っておうちを完成させる',
-      component: DIYHouseGame
-    },
-    {
-      id: 'lizard',
-      title: 'トカゲのせんぷう機乗り',
-      emoji: '🦎',
-      description: '壁を登って昆虫をキャッチしよう！',
-      component: LizardGame
-    },
-    {
-      id: 'nyanko',
-      title: 'にゃんこジャンプ',
-      emoji: '😺',
-      description: '魚を集めながらジャンプで冒険しよう！',
-      component: NyankoJump
-    }
-  ], []);
+  const games = useMemo(
+    () => [
+      {
+        id: "rainbow-hangmat-relay",
+        title: "虹色ハンモックリレー",
+        emoji: "🌈",
+        description: "矢印キーで移動し、スペースキーでアクションを行う",
+        component: RainbowHammockRelayGame,
+      },
+      {
+        id: "shaka-nuka-zuke",
+        title: "シャカシャカぬか漬け",
+        emoji: "🍆",
+        description: "矢印キーで野菜を入れ、スペースキーでぬか床をかき混ぜる",
+        component: ShakaShakaNukaZukeGame,
+      },
+      {
+        id: "heart-runner",
+        title: "ハート集めランナー",
+        emoji: "🏃‍♀️",
+        description: "走りながらハートを集めてスコアを競おう！",
+        component: HeartRunnerGame,
+      },
+      {
+        id: "candy-rocket",
+        title: "キャンディロケット体操",
+        emoji: "🚀",
+        description:
+          "矢印キーでキャンディを点火位置に置き、スペースキーで発射して空中の星を取る",
+        component: CandyRocketGame,
+      },
+      {
+        id: "diy",
+        title: "木の板トントンDIY",
+        emoji: "🔨",
+        description:
+          "矢印キーで板を移動し、スペースキーで釘を打っておうちを完成させる",
+        component: DIYHouseGame,
+      },
+      {
+        id: "lizard",
+        title: "トカゲのせんぷう機乗り",
+        emoji: "🦎",
+        description: "壁を登って昆虫をキャッチしよう！",
+        component: LizardGame,
+      },
+      {
+        id: "nyanko",
+        title: "にゃんこジャンプ",
+        emoji: "😺",
+        description: "魚を集めながらジャンプで冒険しよう！",
+        component: NyankoJump,
+      },
+    ],
+    []
+  );
 
   // ボタン参照の配列をgamesの数に合わせる
   useEffect(() => {
     gameButtonsRef.current = gameButtonsRef.current.slice(0, games.length);
   }, [games]);
 
-  const handleKeyDown = useCallback((e) => {
-    if (selectedGame) {
-      if (e.key === 'Escape') {
-        setSelectedGame(null);
+  const handleKeyDown = useCallback(
+    (e) => {
+      if (selectedGame) {
+        if (e.key === "Escape") {
+          setSelectedGame(null);
+        }
+        return;
       }
-      return;
-    }
 
-    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Enter', ' '].includes(e.key)) {
-      e.preventDefault();
-    }
+      if (
+        [
+          "ArrowLeft",
+          "ArrowRight",
+          "ArrowUp",
+          "ArrowDown",
+          "Enter",
+          " ",
+        ].includes(e.key)
+      ) {
+        e.preventDefault();
+      }
 
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-      setFocusedGameIndex(prevIndex => (prevIndex > 0 ? prevIndex - 1 : games.length - 1));
-    } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-      setFocusedGameIndex(prevIndex => (prevIndex < games.length - 1 ? prevIndex + 1 : 0));
-    } else if (e.key === 'Enter' || e.key === ' ') {
-      setSelectedGame(games[focusedGameIndex].id);
-    }
-  }, [selectedGame, focusedGameIndex, games]);
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        setFocusedGameIndex((prevIndex) =>
+          prevIndex > 0 ? prevIndex - 1 : games.length - 1
+        );
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        setFocusedGameIndex((prevIndex) =>
+          prevIndex < games.length - 1 ? prevIndex + 1 : 0
+        );
+      } else if (e.key === "Enter" || e.key === " ") {
+        setSelectedGame(games[focusedGameIndex].id);
+      }
+    },
+    [selectedGame, focusedGameIndex, games]
+  );
 
   // ゲーム選択時にスクロールをトップに戻す
   useEffect(() => {
@@ -99,14 +128,19 @@ const GameMenu = () => {
 
   // window全体でキーボードイベントを監視する
   useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
   if (selectedGame) {
-    const GameComponent = games.find(game => game.id === selectedGame)?.component;
+    const GameComponent = games.find(
+      (game) => game.id === selectedGame
+    )?.component;
     return (
-      <div className="fixed inset-0 bg-white overflow-auto" ref={gameContainerRef}>
+      <div
+        className="fixed inset-0 bg-white overflow-auto"
+        ref={gameContainerRef}
+      >
         {GameComponent ? (
           <div className="min-h-screen">
             <GameComponent />
@@ -137,16 +171,20 @@ const GameMenu = () => {
               key={game.id}
               onClick={() => setSelectedGame(game.id)}
               className={`bg-white/90 hover:bg-white rounded-xl p-4 md:p-6 text-center transition-all transform hover:scale-105 shadow-lg ${
-                focusedGameIndex === index ? 'ring-4 ring-purple-500' : ''
+                focusedGameIndex === index ? "ring-4 ring-purple-500" : ""
               }`}
-              ref={el => (gameButtonsRef.current[index] = el)}
+              ref={(el) => (gameButtonsRef.current[index] = el)}
               onFocus={() => setFocusedGameIndex(index)}
             >
-              <div className="text-5xl md:text-7xl mb-2 md:mb-4">{game.emoji}</div>
+              <div className="text-5xl md:text-7xl mb-2 md:mb-4">
+                {game.emoji}
+              </div>
               <h2 className="text-xl md:text-2xl font-bold mb-2 text-gray-800">
                 {game.title}
               </h2>
-              <p className="text-sm md:text-base text-gray-600">{game.description}</p>
+              <p className="text-sm md:text-base text-gray-600">
+                {game.description}
+              </p>
             </button>
           ))}
         </div>
