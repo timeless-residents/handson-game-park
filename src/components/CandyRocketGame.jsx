@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Star, Rocket } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Star, Rocket } from "lucide-react";
 
 const initialStars = [
   { x: 20, y: 20, collected: false },
@@ -14,7 +14,7 @@ const CandyRocketGame = () => {
   // ロケットの横位置（%）
   const [position, setPosition] = useState(50);
   // ロケットの動作状態："idle"（待機）、"up"（上昇）、"down"（下降）
-  const [direction, setDirection] = useState('idle');
+  const [direction, setDirection] = useState("idle");
   // ロケットの高さ（0 = 下, 100 = 上）※ CSS の bottom プロパティで管理
   const [height, setHeight] = useState(0);
   const [stars, setStars] = useState(initialStars);
@@ -31,65 +31,74 @@ const CandyRocketGame = () => {
   useEffect(() => {
     const setVh = () => {
       const vh = window.innerHeight * 0.01;
-      document.documentElement.style.setProperty('--vh', `${vh}px`);
+      document.documentElement.style.setProperty("--vh", `${vh}px`);
     };
     setVh();
-    window.addEventListener('resize', setVh);
-    return () => window.removeEventListener('resize', setVh);
+    window.addEventListener("resize", setVh);
+    return () => window.removeEventListener("resize", setVh);
   }, []);
 
   // コンポーネントマウント時にサウンドファイルを読み込み（public/sounds 配下に配置）
   useEffect(() => {
-    launchSoundRef.current = new Audio('/handson-game-park/sounds/rocket-launch.wav');
-    starHitSoundRef.current = new Audio('/handson-game-park/sounds/star-hit.wav');
-    clearSoundRef.current = new Audio('/handson-game-park/sounds/game-clear.wav');
+    launchSoundRef.current = new Audio(
+      "/handson-game-park/sounds/rocket-launch.wav"
+    );
+    starHitSoundRef.current = new Audio(
+      "/handson-game-park/sounds/star-hit.wav"
+    );
+    clearSoundRef.current = new Audio(
+      "/handson-game-park/sounds/game-clear.wav"
+    );
   }, []);
 
   // キーボード操作：待機状態のときのみ有効
-  const handleKeyDown = useCallback((e) => {
-    if (direction !== 'idle') return;
-    switch (e.key) {
-      case 'ArrowLeft':
-        setPosition(prev => Math.max(0, prev - 1));
-        break;
-      case 'ArrowRight':
-        setPosition(prev => Math.min(100, prev + 1));
-        break;
-      case ' ':
-      case 'Spacebar':
-      case 'Space':
-        if (launchSoundRef.current) {
-          launchSoundRef.current.currentTime = 0;
-          launchSoundRef.current.play();
-        }
-        setDirection('up');
-        break;
-      default:
-        break;
-    }
-  }, [direction]);
+  const handleKeyDown = useCallback(
+    (e) => {
+      if (direction !== "idle") return;
+      switch (e.key) {
+        case "ArrowLeft":
+          setPosition((prev) => Math.max(0, prev - 1));
+          break;
+        case "ArrowRight":
+          setPosition((prev) => Math.min(100, prev + 1));
+          break;
+        case " ":
+        case "Spacebar":
+        case "Space":
+          if (launchSoundRef.current) {
+            launchSoundRef.current.currentTime = 0;
+            launchSoundRef.current.play();
+          }
+          setDirection("up");
+          break;
+        default:
+          break;
+      }
+    },
+    [direction]
+  );
 
   useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
   // ロケットの上下移動（タイマーで状態更新）
   useEffect(() => {
-    if (direction === 'idle') return;
+    if (direction === "idle") return;
     const interval = setInterval(() => {
-      setHeight(prevHeight => {
-        if (direction === 'up') {
+      setHeight((prevHeight) => {
+        if (direction === "up") {
           const newHeight = prevHeight + 1.5;
           if (newHeight >= 100) {
-            setDirection('down');
+            setDirection("down");
             return 100;
           }
           return newHeight;
-        } else if (direction === 'down') {
+        } else if (direction === "down") {
           const newHeight = prevHeight - 1.5;
           if (newHeight <= 0) {
-            setDirection('idle');
+            setDirection("idle");
             return 0;
           }
           return newHeight;
@@ -102,10 +111,10 @@ const CandyRocketGame = () => {
 
   // 衝突判定（上昇中のみ）：ロケットと星との距離が一定以下なら星を回収
   useEffect(() => {
-    if (direction !== 'up') return;
+    if (direction !== "up") return;
     const rocketY = 100 - height; // 星は top で配置（上端:0, 下端:100）
     let collisionCount = 0;
-    const updatedStars = stars.map(star => {
+    const updatedStars = stars.map((star) => {
       if (!star.collected) {
         const dx = star.x - position;
         const dy = star.y - rocketY;
@@ -119,19 +128,19 @@ const CandyRocketGame = () => {
     });
     if (collisionCount > 0) {
       setStars(updatedStars);
-      setScore(prev => prev + collisionCount * 100);
+      setScore((prev) => prev + collisionCount * 100);
       if (starHitSoundRef.current) {
         starHitSoundRef.current.currentTime = 0;
         starHitSoundRef.current.play();
       }
       // 衝突したら即座に下降開始
-      setDirection('down');
+      setDirection("down");
     }
   }, [height, position, direction, stars]);
 
   // すべての星が回収された場合、ゲームクリア状態とする
   useEffect(() => {
-    if (stars.every(star => star.collected)) {
+    if (stars.every((star) => star.collected)) {
       setGameClear(true);
       if (clearSoundRef.current) {
         clearSoundRef.current.currentTime = 0;
@@ -142,7 +151,7 @@ const CandyRocketGame = () => {
 
   // ゲームリセット
   const resetGame = () => {
-    setDirection('idle');
+    setDirection("idle");
     setHeight(0);
     setScore(0);
     setStars(initialStars);
@@ -153,8 +162,8 @@ const CandyRocketGame = () => {
   const getDistanceToNearestStar = () => {
     const rocketY = 100 - height;
     const distances = stars
-      .filter(star => !star.collected)
-      .map(star => {
+      .filter((star) => !star.collected)
+      .map((star) => {
         const dx = star.x - position;
         const dy = star.y - rocketY;
         return Math.sqrt(dx * dx + dy * dy);
@@ -174,7 +183,9 @@ const CandyRocketGame = () => {
           <h1 className="text-xl font-bold text-purple-800 leading-tight">
             キャンディロケット体操
           </h1>
-          <div className="text-xl font-bold text-purple-600">スコア: {score}</div>
+          <div className="text-xl font-bold text-purple-600">
+            スコア: {score}
+          </div>
         </div>
       </header>
       {/* ゲーム画面 */}
@@ -182,7 +193,9 @@ const CandyRocketGame = () => {
         {/* ゲームクリアオーバーレイ */}
         {gameClear && (
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-black bg-opacity-50">
-            <h2 className="text-3xl md:text-4xl font-bold text-white">ゲームクリア！</h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-white">
+              ゲームクリア！
+            </h2>
           </div>
         )}
         {/* 背景装飾 */}
@@ -192,14 +205,22 @@ const CandyRocketGame = () => {
         {stars.map((star, index) => (
           <div
             key={index}
-            className={`absolute transition-all duration-300 ${star.collected ? 'opacity-0 scale-150' : 'opacity-100 animate-pulse'}`}
+            className={`absolute transition-all duration-300 ${
+              star.collected
+                ? "opacity-0 scale-150"
+                : "opacity-100 animate-pulse"
+            }`}
             style={{
               left: `${star.x}%`,
               top: `${star.y}%`,
-              transform: 'translate(-50%, -50%)'
+              transform: "translate(-50%, -50%)",
             }}
           >
-            <Star className="text-yellow-400 drop-shadow-lg" size={28} fill="#FCD34D" />
+            <Star
+              className="text-yellow-400 drop-shadow-lg"
+              size={28}
+              fill="#FCD34D"
+            />
           </div>
         ))}
         {/* ロケット */}
@@ -208,13 +229,17 @@ const CandyRocketGame = () => {
           style={{
             left: `${position}%`,
             bottom: `${height}%`,
-            transform: 'translateX(-50%)'
+            transform: "translateX(-50%)",
           }}
         >
           <Rocket
-            className={`transition-transform ${direction !== 'idle' ? 'text-red-500 rotate-0' : 'text-pink-500 -rotate-45'}`}
+            className={`transition-transform ${
+              direction !== "idle"
+                ? "text-red-500 rotate-0"
+                : "text-pink-500 -rotate-45"
+            }`}
             size={36}
-            fill={direction !== 'idle' ? '#EF4444' : '#EC4899'}
+            fill={direction !== "idle" ? "#EF4444" : "#EC4899"}
           />
         </div>
         {/* デバッグ情報（任意） */}
@@ -229,12 +254,18 @@ const CandyRocketGame = () => {
         <div className="bg-white/90 rounded-lg p-2 shadow-lg flex flex-col md:flex-row justify-between items-center">
           <div className="text-sm text-gray-600 flex gap-2 mb-2 md:mb-0">
             <span className="flex items-center gap-1">
-              <kbd className="px-2 py-1 bg-gray-100 border rounded shadow">←</kbd>
-              <kbd className="px-2 py-1 bg-gray-100 border rounded shadow">→</kbd>
+              <kbd className="px-2 py-1 bg-gray-100 border rounded shadow">
+                ←
+              </kbd>
+              <kbd className="px-2 py-1 bg-gray-100 border rounded shadow">
+                →
+              </kbd>
               移動
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-3 py-1 bg-gray-100 border rounded shadow">Space</kbd>
+              <kbd className="px-3 py-1 bg-gray-100 border rounded shadow">
+                Space
+              </kbd>
               発射
             </span>
           </div>
@@ -248,29 +279,29 @@ const CandyRocketGame = () => {
         {/* スマホ向けタッチ操作用仮想ボタン */}
         <div className="touch-controls flex justify-center mt-2 gap-4">
           <button
-            onTouchStart={() => setPosition(prev => Math.max(0, prev - 1))}
-            onClick={() => setPosition(prev => Math.max(0, prev - 1))}
+            onTouchStart={() => setPosition((prev) => Math.max(0, prev - 1))}
+            onClick={() => setPosition((prev) => Math.max(0, prev - 1))}
             className="p-3 bg-gray-200 rounded-full shadow text-lg"
           >
             ←
           </button>
           <button
             onTouchStart={() => {
-              if (direction === 'idle') {
+              if (direction === "idle") {
                 if (launchSoundRef.current) {
                   launchSoundRef.current.currentTime = 0;
                   launchSoundRef.current.play();
                 }
-                setDirection('up');
+                setDirection("up");
               }
             }}
             onClick={() => {
-              if (direction === 'idle') {
+              if (direction === "idle") {
                 if (launchSoundRef.current) {
                   launchSoundRef.current.currentTime = 0;
                   launchSoundRef.current.play();
                 }
-                setDirection('up');
+                setDirection("up");
               }
             }}
             className="p-3 bg-green-200 rounded-full shadow text-lg"
@@ -278,8 +309,8 @@ const CandyRocketGame = () => {
             発射
           </button>
           <button
-            onTouchStart={() => setPosition(prev => Math.min(100, prev + 1))}
-            onClick={() => setPosition(prev => Math.min(100, prev + 1))}
+            onTouchStart={() => setPosition((prev) => Math.min(100, prev + 1))}
+            onClick={() => setPosition((prev) => Math.min(100, prev + 1))}
             className="p-3 bg-gray-200 rounded-full shadow text-lg"
           >
             →

@@ -1,3 +1,4 @@
+// GameMenu.jsx
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import NyankoJump from "./NyankoJump";
 import LizardGame from "./LizardGame";
@@ -6,6 +7,7 @@ import CandyRocketGame from "./CandyRocketGame";
 import HeartRunnerGame from "./HeartRunnerGame";
 import ShakaShakaNukaZukeGame from "./ShakaShakaNukaZukeGame";
 import RainbowHammockRelayGame from "./RainbowHammockRelayGame";
+import MiniFieldHockeyGame from "./MiniFieldHockeyGame";
 
 const GameMenu = () => {
   const [selectedGame, setSelectedGame] = useState(null);
@@ -15,6 +17,14 @@ const GameMenu = () => {
 
   const games = useMemo(
     () => [
+      {
+        id: "mini-field-hockey",
+        title: "ミニフィールドホッケー",
+        emoji: "🏑",
+        description:
+          "矢印キーでホッケースティックを操作し、スペースキーでボールを打ってゴールを狙う",
+        component: MiniFieldHockeyGame,
+      },
       {
         id: "rainbow-hangmat-relay",
         title: "虹色ハンモックリレー",
