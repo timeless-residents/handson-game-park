@@ -1,4 +1,3 @@
-// GameMenu.jsx
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import NyankoJump from "./NyankoJump";
 import LizardGame from "./LizardGame";
@@ -8,6 +7,8 @@ import HeartRunnerGame from "./HeartRunnerGame";
 import ShakaShakaNukaZukeGame from "./ShakaShakaNukaZukeGame";
 import RainbowHammockRelayGame from "./RainbowHammockRelayGame";
 import MiniFieldHockeyGame from "./MiniFieldHockeyGame";
+import SDGRunner from "./SDGRunner";
+import GondolaGame from "./GondolaGame"; // 追加
 
 const GameMenu = () => {
   const [selectedGame, setSelectedGame] = useState(null);
@@ -17,6 +18,21 @@ const GameMenu = () => {
 
   const games = useMemo(
     () => [
+      {
+        id: "gondora",
+        title: "ゴンドラゲーム",
+        emoji: "🚡",
+        description: "ゴンドラを操作して目的地に到達しよう！",
+        component: GondolaGame,
+      },
+      {
+        id: "tree-fort",
+        title: "SDGsヒーロー",
+        emoji: "🌏",
+        description:
+          "SDGsの目標を達成するために、SDGsヒーローが様々なミニゲームに挑戦します。",
+        component: SDGRunner, // 新しく追加
+      },
       {
         id: "mini-field-hockey",
         title: "ミニフィールドホッケー",
