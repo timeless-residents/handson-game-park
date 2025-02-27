@@ -8,7 +8,8 @@ import ShakaShakaNukaZukeGame from "./ShakaShakaNukaZukeGame";
 import RainbowHammockRelayGame from "./RainbowHammockRelayGame";
 import MiniFieldHockeyGame from "./MiniFieldHockeyGame";
 import SDGRunner from "./SDGRunner";
-import GondolaGame from "./GondolaGame"; // 追加
+import GondolaGame from "./GondolaGame";
+import PopupBookGame from "./PopupBookGame"; // 追加
 
 const GameMenu = () => {
   const [selectedGame, setSelectedGame] = useState(null);
@@ -18,6 +19,13 @@ const GameMenu = () => {
 
   const games = useMemo(
     () => [
+      {
+        id: "popup-book",
+        title: "とびだす絵本の国",
+        emoji: "📚",
+        description: "矢印キーで立体化された絵本を進み、スペースキーで飛び出す仕掛けを避ける。",
+        component: PopupBookGame,
+      },
       {
         id: "gondora",
         title: "ゴンドラゲーム",
