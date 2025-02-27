@@ -10,6 +10,7 @@ import MiniFieldHockeyGame from "./MiniFieldHockeyGame";
 import SDGRunner from "./SDGRunner";
 import GondolaGame from "./GondolaGame";
 import PopupBookGame from "./PopupBookGame"; // 追加
+import PuchiBubbleLift from "./PuchiBubbleLift";
 
 const GameMenu = () => {
   const [selectedGame, setSelectedGame] = useState(null);
@@ -19,6 +20,13 @@ const GameMenu = () => {
 
   const games = useMemo(
     () => [
+      {
+        id: "puchi-bubble-lift",
+        title: "ぷちぷちバブルリフト",
+        emoji: "🫧",
+        description: "矢印キーで泡を操作して障害物を避け、スペースキーで泡のサイズを変更する",
+        component: PuchiBubbleLift,
+      },
       {
         id: "popup-book",
         title: "とびだす絵本の国",
