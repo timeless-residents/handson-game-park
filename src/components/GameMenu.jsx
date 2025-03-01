@@ -9,8 +9,9 @@ import RainbowHammockRelayGame from "./RainbowHammockRelayGame";
 import MiniFieldHockeyGame from "./MiniFieldHockeyGame";
 import SDGRunner from "./SDGRunner";
 import GondolaGame from "./GondolaGame";
-import PopupBookGame from "./PopupBookGame"; // 追加
+import PopupBookGame from "./PopupBookGame";
 import PuchiBubbleLift from "./PuchiBubbleLift";
+import TurtleCrossingGame from "./TurtleCrossingGame";
 
 const GameMenu = () => {
   const [selectedGame, setSelectedGame] = useState(null);
@@ -20,6 +21,13 @@ const GameMenu = () => {
 
   const games = useMemo(
     () => [
+      {
+        id: "turtle-crossing",
+        title: "カメののんびりクロス",
+        emoji: "🐢",
+        description: "矢印キーで川を渡り、スペースキーで甲羅にこもって危険を回避する。",
+        component: TurtleCrossingGame,
+      },
       {
         id: "puchi-bubble-lift",
         title: "ぷちぷちバブルリフト",
